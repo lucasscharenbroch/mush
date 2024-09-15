@@ -5,7 +5,11 @@ A minimalist git clone
 
 ## To Do
 
-- [ ] set up cli argparse
+- [X] set up cli argparse
+- [ ] init
+- [ ] hash-file
+- [ ] update-index
+- [ ] write-tree
 - [ ] objects (creation, hashing, compression)
     - [ ] blobs
     - [ ] trees
