@@ -1,8 +1,12 @@
+mod cli_helpers;
+mod fs_helpers;
 mod init;
 
+use cli_helpers::ExitType;
 use init::InitArgs;
 
 use clap::{Parser, Subcommand};
+use std::process::ExitCode;
 
 const SEMANTIC_VERSION: &'static str = "1.0";
 const PROGRAM_NAME: &'static str = "mush";
@@ -26,7 +30,7 @@ enum CliSubcommand {
 }
 
 trait MushSubcommand {
-    fn execute(&self);
+    fn execute(&self) -> ExitType;
 }
 
 impl std::ops::Deref for CliSubcommand {
@@ -39,6 +43,6 @@ impl std::ops::Deref for CliSubcommand {
     }
 }
 
-fn main() {
-    CliArgs::parse().subcommand.execute();
+fn main() -> ExitCode {
+    CliArgs::parse().subcommand.execute().into()
 }

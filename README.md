@@ -2,11 +2,11 @@
 A minimalist git clone
 
 ## Subcommands
+- `mush init`
 
 ## To Do
-
 - [X] set up cli argparse
-- [ ] init
+- [X] init
 - [ ] hash-file
 - [ ] update-index
 - [ ] write-tree
