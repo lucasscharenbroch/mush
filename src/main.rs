@@ -1,8 +1,12 @@
 mod cli_helpers;
 mod fs_helpers;
 mod init;
+mod hash_object;
+mod mush_object;
+mod hash;
 
 use cli_helpers::ExitType;
+use hash_object::HashObjectArgs;
 use init::InitArgs;
 
 use clap::{Parser, Subcommand};
@@ -22,11 +26,12 @@ pub struct CliArgs {
     subcommand: CliSubcommand,
 }
 
-
 #[derive(Subcommand)]
 enum CliSubcommand {
     /// Create an empty Mush repository in the current directory
     Init(InitArgs),
+    /// Compute the hash of a file, optionally creating an object
+    HashObject(HashObjectArgs),
 }
 
 trait MushSubcommand {
@@ -39,6 +44,7 @@ impl std::ops::Deref for CliSubcommand {
     fn deref(&self) -> &Self::Target {
         match self {
             Self::Init(args) => args,
+            Self::HashObject(args) => args,
         }
     }
 }
