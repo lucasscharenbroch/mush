@@ -12,7 +12,7 @@ A minimalist git clone
 - [ ] update-index
 - [ ] write-tree
 - [ ] objects (creation, hashing, compression)
-    - [ ] blobs
+    - [X] blobs
     - [ ] trees
     - [ ] commits
 - [ ] refs

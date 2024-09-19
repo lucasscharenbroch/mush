@@ -9,7 +9,6 @@ impl<'b> MushObject<'b> {
         match self {
             Self::Blob(bytes) => {
                 let header = format!("blob {}\0", bytes.len());
-                println!("hashing, {}", header);
                 Hash::digest([header.as_bytes(), bytes].concat())
             },
         }
