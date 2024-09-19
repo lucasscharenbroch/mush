@@ -28,7 +28,7 @@ macro_rules! create_directory_no_overwrite {
 #[macro_export]
 macro_rules! create_file_no_overwrite {
     ($file:expr, $contents:expr, $reason:expr) => {
-        let _ = match std::fs::File::create($file) {
+        let res = match std::fs::File::create($file) {
             Err(io_err) if matches!(io_err.kind(), std::io::ErrorKind::AlreadyExists) => {
                 eprintln!("Cannot {}: file `{}` already exists", $reason, $file);
                 return crate::cli_helpers::ExitType::Fatal;
@@ -36,9 +36,42 @@ macro_rules! create_file_no_overwrite {
             x => x,
         }.and_then(|mut file| {
             std::io::Write::write_all(&mut file, $contents)
-        }).map_err(|io_err| {
+        });
+
+        if let Err(io_err) = res {
             eprintln!("Failed to {}: error while creating file `{}`: {}", $reason, $file, io_err);
             return crate::cli_helpers::ExitType::Fatal;
-        });
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! read_file_or_stdin {
+    ($filename:expr, $reason:expr) => {
+        if $filename == "-" { // stdin
+            match std::io::read_to_string(std::io::stdin()) {
+                Ok(string) => string,
+                Err(io_err) => {
+                    eprintln!("Failed to {}: error while reading stdin: {}", $reason, io_err);
+                    return crate::cli_helpers::ExitType::Fatal;
+                }
+            }
+        } else { // normal filename
+            let file = match std::fs::File::open(&$filename) {
+                Ok(file) => file,
+                Err(io_err) => {
+                    eprintln!("Failed to {}: error while reading file `{}`: {}", $reason, $filename, io_err);
+                    return crate::cli_helpers::ExitType::Fatal;
+                }
+            };
+
+            match std::io::read_to_string(file) {
+                Ok(string) => string,
+                Err(io_err) => {
+                    eprintln!("Failed to {}: error while reading file `{}`: {}", $reason, $filename, io_err);
+                    return crate::cli_helpers::ExitType::Fatal;
+                }
+            }
+        }
     };
 }

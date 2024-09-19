@@ -11,4 +11,17 @@ impl Hash {
         let hash_as_bytes: GenericArray<u8, generic_array::typenum::U20> = sha1::Sha1::digest(data);
         Self::Hash(hex::encode(hash_as_bytes))
     }
+
+    pub fn as_str(&self) -> &str {
+        &self
+    }
+}
+
+impl std::ops::Deref for Hash {
+    type Target = String;
+    fn deref(&self) -> &Self::Target {
+        match self {
+            Self::Hash(s) => s,
+        }
+    }
 }

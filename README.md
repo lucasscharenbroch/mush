@@ -3,11 +3,12 @@ A minimalist git clone
 
 ## Subcommands
 - `mush init`
+- `mush hash-object`
 
 ## To Do
 - [X] set up cli argparse
 - [X] init
-- [ ] hash-file
+- [X] hash-object
 - [ ] update-index
 - [ ] write-tree
 - [ ] objects (creation, hashing, compression)

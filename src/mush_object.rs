@@ -1,17 +1,17 @@
 use crate::hash::Hash;
 
-enum MushObject<'b> {
+pub enum MushObject<'b> {
     Blob(&'b [u8]),
 }
 
 impl<'b> MushObject<'b> {
-    fn hash(&self) -> Hash {
+    pub fn hash(&self) -> Hash {
         match self {
             Self::Blob(bytes) => {
-                let header = format!("blob #{}\0", bytes.len());
+                let header = format!("blob {}\0", bytes.len());
+                println!("hashing, {}", header);
                 Hash::digest([header.as_bytes(), bytes].concat())
             },
-            _ => todo!(),
         }
     }
 }
