@@ -18,7 +18,7 @@ macro_rules! create_directory_no_overwrite {
                     eprintln!("Failed to {}: error while creating directory `{}`: {}", $reason, $dir, io_err);
                 }
 
-                return crate::cli_helpers::ExitType::Fatal;
+                return crate::cli::ExitType::Fatal;
             },
             _ => (),
         }
@@ -31,7 +31,7 @@ macro_rules! create_file_no_overwrite {
         let res = match std::fs::File::create($file) {
             Err(io_err) if matches!(io_err.kind(), std::io::ErrorKind::AlreadyExists) => {
                 eprintln!("Cannot {}: file `{}` already exists", $reason, $file);
-                return crate::cli_helpers::ExitType::Fatal;
+                return crate::cli::ExitType::Fatal;
             },
             x => x,
         }.and_then(|mut file| {
@@ -40,7 +40,7 @@ macro_rules! create_file_no_overwrite {
 
         if let Err(io_err) = res {
             eprintln!("Failed to {}: error while creating file `{}`: {}", $reason, $file, io_err);
-            return crate::cli_helpers::ExitType::Fatal;
+            return crate::cli::ExitType::Fatal;
         }
     };
 }
@@ -53,7 +53,7 @@ macro_rules! read_file_or_stdin {
                 Ok(string) => string,
                 Err(io_err) => {
                     eprintln!("Failed to {}: error while reading stdin: {}", $reason, io_err);
-                    return crate::cli_helpers::ExitType::Fatal;
+                    return crate::cli::ExitType::Fatal;
                 }
             }
         } else { // normal filename
@@ -61,7 +61,7 @@ macro_rules! read_file_or_stdin {
                 Ok(file) => file,
                 Err(io_err) => {
                     eprintln!("Failed to {}: error while reading file `{}`: {}", $reason, $filename, io_err);
-                    return crate::cli_helpers::ExitType::Fatal;
+                    return crate::cli::ExitType::Fatal;
                 }
             };
 
@@ -69,7 +69,7 @@ macro_rules! read_file_or_stdin {
                 Ok(string) => string,
                 Err(io_err) => {
                     eprintln!("Failed to {}: error while reading file `{}`: {}", $reason, $filename, io_err);
-                    return crate::cli_helpers::ExitType::Fatal;
+                    return crate::cli::ExitType::Fatal;
                 }
             }
         }

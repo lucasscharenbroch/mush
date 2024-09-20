@@ -1,7 +1,7 @@
 use clap::Args;
 
-use crate::MushSubcommand;
-use crate::cli_helpers::ExitType;
+use crate::cli::MushSubcommand;
+use crate::cli::ExitType;
 use crate::mush_object::MushObject;
 
 #[derive(Args)]
