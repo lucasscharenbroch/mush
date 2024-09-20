@@ -25,7 +25,7 @@ impl MushSubcommand for HashObjectArgs {
             let target_file = crate::dot_mush_slash!(object.object_path());
             crate::create_file_all_no_overwrite!(
                 &target_file,
-                content.as_bytes() /* TODO prefix and compress */,
+                object.compressed().as_slice(),
                 "write hash-object"
             );
         }

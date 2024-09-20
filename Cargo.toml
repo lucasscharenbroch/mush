@@ -7,4 +7,5 @@ edition = "2021"
 clap = { version = "4.5.17", features = ["derive"] }
 generic-array = "1.1.0"
 hex = "0.4.3"
+miniz_oxide = "0.8.0"
 sha1 = "0.10.6"
