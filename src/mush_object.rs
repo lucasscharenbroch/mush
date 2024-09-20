@@ -13,4 +13,10 @@ impl<'b> MushObject<'b> {
             },
         }
     }
+
+    pub fn object_path(&self) -> String {
+        let hash = self.hash();
+        let (prefix, suffix) = hash.split_at(2);
+        format!("objects/{}/{}", prefix, suffix)
+    }
 }

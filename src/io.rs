@@ -26,6 +26,24 @@ macro_rules! create_directory_no_overwrite {
 }
 
 #[macro_export]
+macro_rules! create_directory_all {
+    ($dir:expr, $reason:expr) => {
+        match std::fs::create_dir_all($dir) {
+            Err(io_err) => {
+                if let std::io::ErrorKind::AlreadyExists = io_err.kind() {
+                    eprintln!("Cannot {}: directory `{}` already exists", $reason, $dir);
+                } else {
+                    eprintln!("Failed to {}: error while creating directory `{}`: {}", $reason, $dir, io_err);
+                }
+
+                return crate::cli::ExitType::Fatal;
+            },
+            _ => (),
+        }
+    };
+}
+
+#[macro_export]
 macro_rules! create_file_no_overwrite {
     ($file:expr, $contents:expr, $reason:expr) => {
         let res = match std::fs::File::create($file) {
@@ -43,6 +61,17 @@ macro_rules! create_file_no_overwrite {
             return crate::cli::ExitType::Fatal;
         }
     };
+}
+
+#[macro_export]
+macro_rules! create_file_all_no_overwrite {
+    ($file:expr, $contents:expr, $reason:expr) => {
+        let path = std::path::Path::new($file);
+        let directory = path.parent().unwrap_or(std::path::Path::new("."));
+
+        crate::create_directory_all!(directory.to_str().unwrap(), $reason);
+        crate::create_file_no_overwrite!(path.to_str().unwrap(), $contents, $reason);
+    }
 }
 
 #[macro_export]
@@ -73,5 +102,15 @@ macro_rules! read_file_or_stdin {
                 }
             }
         }
+    };
+}
+
+#[macro_export]
+macro_rules! dot_mush_slash {
+    ($path:expr) => {
+        // TODO traverse upward and try to find `.mush`;
+        // assert that cwd is in a workspace
+        // (not directly within `.mush`, but a child of a directory adjacent to it)
+        format!(".mush/{}", $path)
     };
 }
