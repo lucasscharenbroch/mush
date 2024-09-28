@@ -1,10 +1,8 @@
-use clap::Args;
-
 use crate::cli::MushSubcommand;
 use crate::cli::ExitType;
 use crate::mush_object::MushObject;
 
-#[derive(Args)]
+#[derive(clap::Args)]
 pub struct HashObjectArgs {
     /// Actually write the object into the object database
     #[arg(short)]

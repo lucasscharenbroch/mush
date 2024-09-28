@@ -1,8 +1,10 @@
 mod init;
 mod hash_object;
+mod cat_file;
 
 use hash_object::HashObjectArgs;
 use init::InitArgs;
+use cat_file::CatFileArgs;
 
 use clap::{Parser, Subcommand};
 use std::process::ExitCode;
@@ -37,6 +39,8 @@ pub enum CliSubcommand {
     Init(InitArgs),
     /// Compute the hash of a file, optionally creating an object
     HashObject(HashObjectArgs),
+    /// Provide contents or details of repository objects
+    CatFile(CatFileArgs),
 }
 
 pub trait MushSubcommand {
@@ -50,6 +54,7 @@ impl std::ops::Deref for CliSubcommand {
         match self {
             Self::Init(args) => args,
             Self::HashObject(args) => args,
+            Self::CatFile(args) => args,
         }
     }
 }

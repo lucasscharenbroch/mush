@@ -1,8 +1,6 @@
-use clap::Args;
-
 use crate::cli::{MushSubcommand, ExitType};
 
-#[derive(Args)]
+#[derive(clap::Args)]
 pub struct InitArgs {
 }
 
