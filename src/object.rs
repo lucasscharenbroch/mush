@@ -2,11 +2,11 @@ use crate::hash::Hash;
 
 const COMPRESSION_LEVEL: u8 = 6;
 
-pub enum MushObject<'b> {
+pub enum Object<'b> {
     Blob(&'b [u8]),
 }
 
-impl<'b> MushObject<'b> {
+impl<'b> Object<'b> {
     pub fn store(&self) -> Vec<u8> {
         match self {
             Self::Blob(bytes) => {

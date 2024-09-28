@@ -1,6 +1,6 @@
 mod io;
 mod cli;
-mod mush_object;
+mod object;
 mod hash;
 
 use clap::Parser;

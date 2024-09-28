@@ -1,6 +1,6 @@
 use crate::cli::MushSubcommand;
 use crate::cli::ExitType;
-use crate::mush_object::MushObject;
+use crate::object::Object;
 
 #[derive(clap::Args)]
 pub struct CatFileArgs {

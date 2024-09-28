@@ -1,6 +1,6 @@
 use crate::cli::MushSubcommand;
 use crate::cli::ExitType;
-use crate::mush_object::MushObject;
+use crate::object::Object;
 
 #[derive(clap::Args)]
 pub struct HashObjectArgs {
@@ -14,7 +14,7 @@ pub struct HashObjectArgs {
 impl MushSubcommand for HashObjectArgs {
     fn execute(&self) -> ExitType {
         let content = crate::read_file_or_stdin!(self.file, "Compute hash of object");
-        let object = MushObject::Blob(content.as_bytes());
+        let object = Object::Blob(content.as_bytes());
         let hash = object.hash();
 
         println!("{}", hash.as_str());
