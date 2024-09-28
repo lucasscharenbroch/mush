@@ -58,3 +58,16 @@ impl std::ops::Deref for CliSubcommand {
         }
     }
 }
+
+#[macro_export]
+macro_rules! cli_expect {
+    ($result:expr) => {
+        match $result {
+            Err(message) => {
+                eprintln!("{}", message);
+                return ExitType::Fatal;
+            }
+            Ok(x) => x,
+        }
+    };
+}

@@ -1,6 +1,20 @@
+mod pretty_print;
+
 use crate::hash::Hash;
 
 const COMPRESSION_LEVEL: u8 = 6;
+
+pub enum ObjectType {
+    Blob,
+}
+
+impl ObjectType {
+    pub fn to_str(&self) -> &str {
+        match self {
+            Self::Blob => "blob",
+        }
+    }
+}
 
 pub enum Object<'b> {
     Blob(&'b [u8]),

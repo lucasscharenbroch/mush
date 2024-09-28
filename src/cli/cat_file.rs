@@ -1,6 +1,6 @@
 use crate::cli::MushSubcommand;
 use crate::cli::ExitType;
-use crate::object::Object;
+use crate::revision::RevisionSpec;
 
 #[derive(clap::Args)]
 pub struct CatFileArgs {
@@ -33,7 +33,7 @@ struct CatFileVariantArgs {
 }
 
 impl CatFileVariantArgs {
-    fn toEnum(&self) -> CatFileVariant {
+    fn to_enum(&self) -> CatFileVariant {
         match (self.tipe, self.pretty_print, self.exists, self.size) {
             (true, false, false, false) => CatFileVariant::Type,
             (false, true, false, false) => CatFileVariant::PrettyPrint,
@@ -54,6 +54,22 @@ enum CatFileVariant {
 
 impl MushSubcommand for CatFileArgs {
     fn execute(&self) -> ExitType {
-        todo!()
+        let revision_spec = crate::cli_expect!(RevisionSpec::parse(&self.object));
+        let hash = crate::cli_expect!(revision_spec.dereference());
+
+        match self.variant.to_enum() {
+            CatFileVariant::Type => {
+                println!("{}", crate::cli_expect!(hash.get_type()).to_str());
+            },
+            CatFileVariant::Exists => (), // `hash` has been verified to exist (asserted with `dereference()`)
+            CatFileVariant::Size => {
+                println!("{}", crate::cli_expect!(hash.get_size_in_bytes()));
+            },
+            CatFileVariant::PrettyPrint => {
+                println!("{}", crate::cli_expect!(hash.get_object()).pretty_print())
+            },
+        }
+
+        ExitType::Ok
     }
 }

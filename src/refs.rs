@@ -5,7 +5,7 @@ struct Ref {
 }
 
 impl Ref {
-    fn toHash(&self) -> Hash {
+    fn to_hash(&self) -> Hash {
         todo!()
     }
 }
