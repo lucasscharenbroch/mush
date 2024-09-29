@@ -20,7 +20,10 @@ impl<'s> RevisionSpec<'s> {
     /// Attempt to locate this revision in the database
     /// `Ok(None)` is returned if the search fails gracefully
     pub fn try_dereference(&self) -> Result<Option<Hash>, String> {
-        todo!()
+        match &self.parse_tree {
+            RevisionSpecParseTree::HashOrRef(string) => Ok(Some(Hash::Hash(string.clone()))), // TODO don't assume the input is a valid hash
+            _ => todo!(),
+        }
     }
 
     /// Attempt to locate this revision in the database;
@@ -46,6 +49,6 @@ enum RevisionSpecParseTree {
 
 impl RevisionSpecParseTree {
     fn parse(input: &str) -> Result<Self, String> {
-        todo!()
+        Ok(Self::HashOrRef(String::from(input))) // TODO actually parse here
     }
 }

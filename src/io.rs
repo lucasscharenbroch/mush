@@ -106,6 +106,19 @@ macro_rules! read_file_or_stdin {
 }
 
 #[macro_export]
+macro_rules! open_file_for_reading {
+    ($filename:expr, $reason:expr) => {
+        match std::fs::File::open(&$filename) {
+            Ok(file) => file,
+            Err(io_err) => {
+                eprintln!("Failed to {}: error while opening file `{}`: {}", $reason, $filename, io_err);
+                return crate::cli::ExitType::Fatal;
+            }
+        }
+    };
+}
+
+#[macro_export]
 macro_rules! dot_mush_slash {
     ($path:expr) => {
         // TODO traverse upward and try to find `.mush`;

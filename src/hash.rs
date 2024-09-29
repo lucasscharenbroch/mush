@@ -1,4 +1,4 @@
-use crate::object::{Object, ObjectType};
+use crate::{open_file_for_reading, dot_mush_slash, object::{Object, ObjectHeader, ObjectType}};
 
 use sha1::{digest::generic_array::GenericArray, Digest};
 
@@ -18,16 +18,9 @@ impl Hash {
         &self
     }
 
-    pub fn get_type(&self) -> Result<ObjectType, String> {
-        todo!()
-    }
-
-    pub fn get_size_in_bytes(&self) -> Result<usize, String> {
-        todo!()
-    }
-
-    pub fn get_object(&self) -> Result<Object, String> {
-        todo!()
+    pub fn path(&self) -> String {
+        let (prefix, suffix) = self.split_at(2);
+        format!("objects/{}/{}", prefix, suffix)
     }
 }
 

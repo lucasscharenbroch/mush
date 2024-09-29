@@ -20,7 +20,7 @@ impl MushSubcommand for HashObjectArgs {
         println!("{}", hash.as_str());
 
         if self.write_result_to_database {
-            let target_file = crate::dot_mush_slash!(object.object_path());
+            let target_file = crate::dot_mush_slash!(object.hash().path());
             crate::create_file_all_no_overwrite!(
                 &target_file,
                 object.compressed().as_slice(),

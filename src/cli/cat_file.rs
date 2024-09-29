@@ -56,17 +56,20 @@ impl MushSubcommand for CatFileArgs {
     fn execute(&self) -> ExitType {
         let revision_spec = crate::cli_expect!(RevisionSpec::parse(&self.object));
         let hash = crate::cli_expect!(revision_spec.dereference());
+        let file = crate::open_file_for_reading!(crate::dot_mush_slash!(hash.path()), "get object header");
+        let header = crate::cli_expect!(crate::object::ObjectHeader::extract_from_file(file, &hash));
 
         match self.variant.to_enum() {
             CatFileVariant::Type => {
-                println!("{}", crate::cli_expect!(hash.get_type()).to_str());
+                println!("{}", header.tipe.to_str());
             },
             CatFileVariant::Exists => (), // `hash` has been verified to exist (asserted with `dereference()`)
             CatFileVariant::Size => {
-                println!("{}", crate::cli_expect!(hash.get_size_in_bytes()));
+                println!("{}", header.size);
             },
             CatFileVariant::PrettyPrint => {
-                println!("{}", crate::cli_expect!(hash.get_object()))
+                todo!()
+                // println!("{}", crate::cli_expect!(todo!()))
             },
         }
 
