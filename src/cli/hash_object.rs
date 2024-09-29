@@ -17,7 +17,7 @@ impl MushSubcommand for HashObjectArgs {
         let object = Object::Blob(content.as_bytes());
         let hash = object.hash();
 
-        println!("{}", hash.as_str());
+        println!("{}", hash.as_str()); // Not a debug print
 
         if self.write_result_to_database {
             let target_file = crate::dot_mush_slash!(object.hash().path());

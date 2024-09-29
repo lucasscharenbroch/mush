@@ -56,12 +56,17 @@ pub struct ObjectHeader {
 impl ObjectHeader {
     pub fn extract_from_file(file: impl std::io::Read, object_hash: &str) -> Result<Self, String> {
         // (`object_hash` is for diagnostic only)
+        // ideally there would be no io logic in this module, but
+        // efficient reading of the header (and not the rest of the object)
+        // involves both io and format-related logic, and it goes here
+        // because of the latter
 
-        file.bytes()
+        std::io::Read::bytes(flate2::read::DeflateDecoder::new(file))
+            // make the Result clonable
             .map(|res| res.map_err(|io_err| io_err.to_string()))
             // take bytes until the null byte is encountered, collect errors
-            .take_while(|res| res.clone().map(|b| b != b'0').unwrap_or(true))
-            .collect::<Result<Vec<_>, _>>() // (sequence/mapM)
+            .take_while(|res| res.clone().map(|b| b != b'\0').unwrap_or(true))
+            .collect::<Result<Vec<_>, _>>() // (sequence/mapM) (fail on the first err)
             .map_err(|io_err| format!("Failed to read object `{object_hash}`: {io_err}"))
             .and_then(|bytes| {
                 ObjectHeader::from_string(&String::from_utf8_lossy(bytes.as_slice()))
