@@ -1,4 +1,7 @@
 # mush
+
+![Mush Logo](logo.png)
+
 A minimalist git clone
 
 ## Subcommands
@@ -9,8 +12,8 @@ A minimalist git clone
 - [X] set up cli argparse
 - [X] init
 - [X] hash-object
+- [X] cat-file
 - [ ] update-index
-- [ ] cat-file
 - [ ] write-tree
 - [ ] objects (creation, hashing, compression)
     - [X] blobs
