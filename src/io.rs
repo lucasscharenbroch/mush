@@ -88,6 +88,22 @@ macro_rules! read_file_to_str {
 }
 
 #[macro_export]
+macro_rules! read_file_to_bytes {
+    ($file:expr, $filename:expr, $reason:expr) => {
+        {
+            let mut res = Vec::new();
+            match std::io::Read::read_to_end(&mut $file, &mut res) {
+                Ok(_) => res,
+                Err(io_err) => {
+                    eprintln!("Failed to {}: error while reading file `{}`: {}", $reason, $filename, io_err);
+                    return crate::cli::ExitType::Fatal;
+                }
+            }
+        }
+    };
+}
+
+#[macro_export]
 macro_rules! open_filename {
     ($filename:expr, $reason:expr) => {
         match std::fs::File::open(&$filename) {
@@ -104,6 +120,17 @@ macro_rules! open_filename {
 macro_rules! read_filename_to_str {
     ($filename:expr, $reason:expr) => {
         crate::read_file_to_str!(
+            crate::open_filename!($filename, $reason),
+            $filename,
+            $reason
+        )
+    };
+}
+
+#[macro_export]
+macro_rules! read_filename_to_bytes {
+    ($filename:expr, $reason:expr) => {
+        crate::read_file_to_bytes!(
             crate::open_filename!($filename, $reason),
             $filename,
             $reason
