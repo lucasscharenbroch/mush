@@ -75,7 +75,44 @@ macro_rules! create_file_all_no_overwrite {
 }
 
 #[macro_export]
-macro_rules! read_file_or_stdin {
+macro_rules! read_file_to_str {
+    ($file:expr, $filename:expr, $reason:expr) => {
+        match std::io::read_to_string($file) {
+            Ok(string) => string,
+            Err(io_err) => {
+                eprintln!("Failed to {}: error while reading file `{}`: {}", $reason, $filename, io_err);
+                return crate::cli::ExitType::Fatal;
+            }
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! open_filename {
+    ($filename:expr, $reason:expr) => {
+        match std::fs::File::open(&$filename) {
+            Ok(file) => file,
+            Err(io_err) => {
+                eprintln!("Failed to {}: error while opening file `{}`: {}", $reason, $filename, io_err);
+                return crate::cli::ExitType::Fatal;
+            }
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! read_filename_to_str {
+    ($filename:expr, $reason:expr) => {
+        crate::read_file_to_str!(
+            crate::open_filename!($filename, $reason),
+            $filename,
+            $reason
+        )
+    };
+}
+
+#[macro_export]
+macro_rules! read_filename_or_stdin_to_str {
     ($filename:expr, $reason:expr) => {
         if $filename == "-" { // stdin
             match std::io::read_to_string(std::io::stdin()) {
@@ -86,34 +123,7 @@ macro_rules! read_file_or_stdin {
                 }
             }
         } else { // normal filename
-            let file = match std::fs::File::open(&$filename) {
-                Ok(file) => file,
-                Err(io_err) => {
-                    eprintln!("Failed to {}: error while reading file `{}`: {}", $reason, $filename, io_err);
-                    return crate::cli::ExitType::Fatal;
-                }
-            };
-
-            match std::io::read_to_string(file) {
-                Ok(string) => string,
-                Err(io_err) => {
-                    eprintln!("Failed to {}: error while reading file `{}`: {}", $reason, $filename, io_err);
-                    return crate::cli::ExitType::Fatal;
-                }
-            }
-        }
-    };
-}
-
-#[macro_export]
-macro_rules! open_file_for_reading {
-    ($filename:expr, $reason:expr) => {
-        match std::fs::File::open(&$filename) {
-            Ok(file) => file,
-            Err(io_err) => {
-                eprintln!("Failed to {}: error while opening file `{}`: {}", $reason, $filename, io_err);
-                return crate::cli::ExitType::Fatal;
-            }
+            crate::read_filename_to_str!($filename, $reason)
         }
     };
 }

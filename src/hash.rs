@@ -1,5 +1,3 @@
-use crate::{open_file_for_reading, dot_mush_slash, object::{Object, ObjectHeader, ObjectType}};
-
 use sha1::{digest::generic_array::GenericArray, Digest};
 
 /// Newtype (wrapper) for `String`

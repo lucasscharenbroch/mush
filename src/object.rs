@@ -37,12 +37,24 @@ impl<'b> Object<'b> {
         }
     }
 
+    fn unstore(bytes: Vec<u8>) -> Result<Self, String> {
+        todo!()
+    }
+
     pub fn hash(&self) -> Hash {
         Hash::digest(self.store())
     }
 
     pub fn compressed(&self) -> Vec<u8> {
         miniz_oxide::deflate::compress_to_vec(self.store().as_slice(), COMPRESSION_LEVEL)
+    }
+
+    pub fn from_compressed_bytes(bytes: &[u8]) -> Result<Self, String> {
+        miniz_oxide::inflate::decompress_to_vec(bytes)
+            .map_err(|err| err.to_string())
+            .and_then(|decompressed_bytes| {
+            Self::unstore(decompressed_bytes)
+        })
     }
 }
 
@@ -56,10 +68,12 @@ pub struct ObjectHeader {
 impl ObjectHeader {
     pub fn extract_from_file(file: impl std::io::Read, object_hash: &str) -> Result<Self, String> {
         // (`object_hash` is for diagnostic only)
-        // ideally there would be no io logic in this module, but
+        // ideally there would be no IO logic in this module, but
         // efficient reading of the header (and not the rest of the object)
         // involves both io and format-related logic, and it goes here
         // because of the latter
+
+        // TODO factor out with "read/decode prefix" macro? or the like?
 
         std::io::Read::bytes(flate2::read::DeflateDecoder::new(file))
             // make the Result clonable

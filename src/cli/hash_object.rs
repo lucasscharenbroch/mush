@@ -8,12 +8,12 @@ pub struct HashObjectArgs {
     #[arg(short)]
     write_result_to_database: bool,
     /// Use '-' for stdin
-    file: String,
+    filename: String,
 }
 
 impl MushSubcommand for HashObjectArgs {
     fn execute(&self) -> ExitType {
-        let content = crate::read_file_or_stdin!(self.file, "Compute hash of object");
+        let content = crate::read_filename_or_stdin_to_str!(self.filename, "Compute hash of object");
         let object = Object::Blob(content.as_bytes());
         let hash = object.hash();
 
