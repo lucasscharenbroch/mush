@@ -66,7 +66,7 @@ impl MushSubcommand for CatFileArgs {
                 println!("{}", crate::cli_expect!(hash.get_size_in_bytes()));
             },
             CatFileVariant::PrettyPrint => {
-                println!("{}", crate::cli_expect!(hash.get_object()).pretty_print())
+                println!("{}", crate::cli_expect!(hash.get_object()))
             },
         }
 
