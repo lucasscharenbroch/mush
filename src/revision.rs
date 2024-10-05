@@ -49,6 +49,50 @@ enum RevisionSpecParseTree {
 
 impl RevisionSpecParseTree {
     fn parse(input: &str) -> Result<Self, String> {
-        Ok(Self::HashOrRef(String::from(input))) // TODO actually parse here
+        let main_re = regex::Regex::new(
+            r"^(?<base>[^^~]+)(?<modifiers>[\^~].*)?"
+        ).unwrap();
+
+        // e.g.
+        // origin/master~3^2~
+        // ^^^^^^^^^^^^^
+        // "base"
+        //              ^^^^
+        //              "modifiers"
+
+        main_re.captures(input).and_then(|captures| {
+            let base_str = &captures["base"];
+            let modifiers_str = &captures["modifiers"];
+
+            let mod_re = regex::Regex::new(
+                r"([\^~])([0-9]*)"
+            ).unwrap();
+
+            let modifiers_opt = mod_re.captures_iter(modifiers_str)
+                .map(|captures| captures.extract())
+                .map(|(_, [operator, arg])| {
+                    let arg = if arg == "" { "1" } else { arg };
+                    arg.parse::<usize>()
+                        // Result to Option
+                        .map(|n| Some(n))
+                        .unwrap_or(None)
+                        .map(|n| (operator, n))
+                })
+                .collect::<Option<Vec<_>>>(); // sequence (fail on first None)
+
+            modifiers_opt.map(|modifiers| {
+                modifiers.iter()
+                    .fold(
+                        Self::HashOrRef(String::from(base_str)),
+                        |acc, (operator, n)| {
+                            match *operator {
+                                "^" => RevisionSpecParseTree::NthParent(Box::new(acc), *n),
+                                "~" => RevisionSpecParseTree::NthGenerationalParent(Box::new(acc), *n),
+                                _ => panic!("Invariant error (regex with invalid modifier modifier)"),
+                            }
+                        }
+                    )
+            })
+        }).ok_or(format!("Bad revision spec: `{input}`"))
     }
 }
