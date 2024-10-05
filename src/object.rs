@@ -35,8 +35,8 @@ impl<'b> Object<'b> {
     pub fn store(&self) -> Vec<u8> {
         match self {
             Self::Blob(bytes) => {
-                let header = format!("blob {}\0", bytes.len());
-                [header.as_bytes(), bytes].concat()
+                let header = format!("blob {}", bytes.len());
+                [header.as_bytes(), &[b'\0'], bytes].concat()
             },
         }
     }
@@ -48,7 +48,7 @@ impl<'b> Object<'b> {
             }
         }
 
-        if let Some(null_byte_idx) = bytes.iter().position(|b| *b == b'0') {
+        if let Some(null_byte_idx) = bytes.iter().position(|b| *b == b'\0') {
             let contents = bytes.split_off(null_byte_idx + 1);
             let header= ObjectHeader::from_bytes(&bytes[..null_byte_idx])?;
 
