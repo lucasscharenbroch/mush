@@ -7,6 +7,7 @@ A minimalist git clone
 ## Subcommands
 - `mush init`
 - `mush hash-object`
+- `mush cat-file`
 
 ## To Do
 - [X] set up cli argparse

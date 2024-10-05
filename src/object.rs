@@ -2,6 +2,9 @@ mod pretty_print;
 
 use crate::hash::Hash;
 
+use std::borrow::Cow;
+
+
 const COMPRESSION_LEVEL: u8 = 6;
 
 pub enum ObjectType {
@@ -15,16 +18,17 @@ impl ObjectType {
         }
     }
 
-    fn from_string(string: &str) -> Option<Self> {
+    fn from_string(string: &str) -> Result<Self, String> {
         match string {
-            "blob" => Some(Self::Blob),
-            _ => None
+            "blob" => Ok(Self::Blob),
+            _ => Err(format!("Bad object type: `{string}`"))
         }
     }
 }
 
 pub enum Object<'b> {
-    Blob(&'b [u8]),
+    Blob(Cow<'b, [u8]>), // `Cow<'b, [u8]>` allows both owned ([u8]) and borrowed (&'b [u8])
+                         // under the same interface
 }
 
 impl<'b> Object<'b> {
@@ -37,8 +41,25 @@ impl<'b> Object<'b> {
         }
     }
 
-    fn unstore(bytes: Vec<u8>) -> Result<Self, String> {
-        todo!()
+    fn unstore(mut bytes: Vec<u8>) -> Result<Self, String> {
+        fn decode_contents<'b>(tipe: ObjectType, contents: Vec<u8>) -> Result<Object<'b>, String> {
+            match tipe {
+                ObjectType::Blob => Ok(Object::Blob(Cow::Owned(contents))),
+            }
+        }
+
+        if let Some(null_byte_idx) = bytes.iter().position(|b| *b == b'0') {
+            let contents = bytes.split_off(null_byte_idx + 1);
+            let header= ObjectHeader::from_bytes(&bytes[..null_byte_idx])?;
+
+            if header.size != contents.len() {
+                Err(String::from("Corrupt object (mismatched header and contents size)"))
+            } else {
+                decode_contents(header.tipe, contents)
+            }
+        } else {
+            Err(String::from("Invalid header (no null byte)"))
+        }
     }
 
     pub fn hash(&self) -> Hash {
@@ -49,7 +70,7 @@ impl<'b> Object<'b> {
         miniz_oxide::deflate::compress_to_vec(self.store().as_slice(), COMPRESSION_LEVEL)
     }
 
-    pub fn from_compressed_bytes(bytes: &[u8]) -> Result<Self, String> {
+    pub fn from_compressed_bytes(bytes: &[u8]) -> Result<Object<'b>, String> {
         miniz_oxide::inflate::decompress_to_vec(bytes)
             .map_err(|err| err.to_string())
             .and_then(|decompressed_bytes| {
@@ -81,31 +102,32 @@ impl ObjectHeader {
             // take bytes until the null byte is encountered, collect errors
             .take_while(|res| res.clone().map(|b| b != b'\0').unwrap_or(true))
             .collect::<Result<Vec<_>, _>>() // (sequence/mapM) (fail on the first err)
-            .map_err(|io_err| format!("Failed to read object `{object_hash}`: {io_err}"))
-            .and_then(|bytes| {
-                ObjectHeader::from_string(&String::from_utf8_lossy(bytes.as_slice()))
-                    .map(|oh| Ok(oh))
-                    .unwrap_or(Err(format!("Bad header of object `{object_hash}`")))
-            })
+            .and_then(|bytes| ObjectHeader::from_bytes(bytes.as_slice()))
+            .map_err(|msg| format!("Failed to read object `{object_hash}`: {msg}"))
     }
 
-    fn from_string(string: &str) -> Option<Self> {
+    fn from_bytes(bytes: &[u8]) -> Result<Self, String> {
         // e.g. "blob 1234"
         //       ^^^^ ^^^^
+        let string = String::from_utf8_lossy(bytes);
         let segments = string.split(" ").collect::<Vec<_>>();
 
         if segments.len() != 2 {
-            None
+            Err(String::from("Bad object header"))
         } else {
             let (type_str, size_str) = (segments[0], segments[1]);
-            ObjectType::from_string(type_str).and_then(|tipe| {
-                size_str.parse::<usize>().ok().map(|size| {
-                    ObjectHeader {
-                        tipe,
-                        size
-                    }
+            ObjectType::from_string(type_str)
+                .map_err(|msg| format!("Bad object header: {msg}"))
+                .and_then(|tipe| {
+                    size_str.parse::<usize>()
+                        .map_err(|err| err.to_string())
+                        .map(|size| {
+                            ObjectHeader {
+                                tipe,
+                                size
+                            }
+                        })
                 })
-            })
         }
     }
 }

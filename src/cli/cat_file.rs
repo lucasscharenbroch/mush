@@ -72,7 +72,10 @@ impl MushSubcommand for CatFileArgs {
             },
             CatFileVariant::PrettyPrint => {
                 let object_contents_str = crate::read_filename_to_bytes!(object_filename, "read object");
-                println!("{}", cli_expect!(Object::from_compressed_bytes(&object_contents_str)));
+                println!(
+                    "Error while reading object `{object_filename}`: {}",
+                    cli_expect!(Object::from_compressed_bytes(&object_contents_str))
+                );
             },
         }
 
