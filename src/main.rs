@@ -1,9 +1,9 @@
-mod io;
 mod cli;
-mod object;
 mod hash;
-mod revision;
-mod refs; // plural to avoid name collision with `ref` keyword
+mod io;
+mod object;
+mod refs;
+mod revision; // plural to avoid name collision with `ref` keyword
 
 use clap::Parser;
 

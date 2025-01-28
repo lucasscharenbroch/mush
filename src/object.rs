@@ -4,7 +4,6 @@ use crate::{cli::CliResult, hash::Hash};
 
 use std::borrow::Cow;
 
-
 const COMPRESSION_LEVEL: u8 = 6;
 
 pub enum ObjectType {
@@ -21,7 +20,7 @@ impl ObjectType {
     fn from_string(string: &str) -> CliResult<Self> {
         match string {
             "blob" => Ok(Self::Blob),
-            _ => Err(format!("Bad object type: `{string}`"))
+            _ => Err(format!("Bad object type: `{string}`")),
         }
     }
 }
@@ -37,7 +36,7 @@ impl<'b> Object<'b> {
             Self::Blob(bytes) => {
                 let header = format!("blob {}", bytes.len());
                 [header.as_bytes(), &[b'\0'], bytes].concat()
-            },
+            }
         }
     }
 
@@ -50,10 +49,12 @@ impl<'b> Object<'b> {
 
         if let Some(null_byte_idx) = bytes.iter().position(|b| *b == b'\0') {
             let contents = bytes.split_off(null_byte_idx + 1);
-            let header= ObjectHeader::from_bytes(&bytes[..null_byte_idx])?;
+            let header = ObjectHeader::from_bytes(&bytes[..null_byte_idx])?;
 
             if header.size != contents.len() {
-                Err(String::from("Corrupt object (mismatched header and contents size)"))
+                Err(String::from(
+                    "Corrupt object (mismatched header and contents size)",
+                ))
             } else {
                 decode_contents(header.tipe, contents)
             }
@@ -73,9 +74,7 @@ impl<'b> Object<'b> {
     pub fn from_compressed_bytes(bytes: &[u8]) -> CliResult<Object<'b>> {
         miniz_oxide::inflate::decompress_to_vec(bytes)
             .map_err(|err| err.to_string())
-            .and_then(|decompressed_bytes| {
-            Self::unstore(decompressed_bytes)
-        })
+            .and_then(|decompressed_bytes| Self::unstore(decompressed_bytes))
     }
 }
 
@@ -119,14 +118,10 @@ impl ObjectHeader {
             ObjectType::from_string(type_str)
                 .map_err(|msg| format!("Bad object header: {msg}"))
                 .and_then(|tipe| {
-                    size_str.parse::<usize>()
+                    size_str
+                        .parse::<usize>()
                         .map_err(|err| err.to_string())
-                        .map(|size| {
-                            ObjectHeader {
-                                tipe,
-                                size
-                            }
-                        })
+                        .map(|size| ObjectHeader { tipe, size })
                 })
         }
     }

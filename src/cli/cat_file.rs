@@ -1,5 +1,5 @@
-use crate::cli::MushSubcommand;
 use crate::cli::ExitType;
+use crate::cli::MushSubcommand;
 use crate::cli_expect;
 use crate::object::Object;
 use crate::revision::RevisionSpec;
@@ -18,19 +18,19 @@ pub struct CatFileArgs {
 #[derive(clap::Args)]
 struct CatFileVariantArgs {
     /// Show the type of the object
-    #[arg(short, group="variant")]
+    #[arg(short, group = "variant")]
     tipe: bool,
 
     /// Pretty-print the object
-    #[arg(short, group="variant")]
+    #[arg(short, group = "variant")]
     pretty_print: bool,
 
     /// Check if the object exists
-    #[arg(short, group="variant")]
+    #[arg(short, group = "variant")]
     exists: bool,
 
     /// Show the size (in bytes) of the object
-    #[arg(short, group="variant")]
+    #[arg(short, group = "variant")]
     size: bool,
 }
 
@@ -60,24 +60,26 @@ impl MushSubcommand for CatFileArgs {
         let hash = crate::cli_expect!(revision_spec.dereference());
         let object_filename = crate::dot_mush_slash!(hash.path());
         let file = crate::open_filename!(object_filename, "get object header");
-        let header = crate::cli_expect!(crate::object::ObjectHeader::extract_from_file(file, &hash));
+        let header =
+            crate::cli_expect!(crate::object::ObjectHeader::extract_from_file(file, &hash));
 
         match self.variant.to_enum() {
             CatFileVariant::Type => {
                 println!("{}", header.tipe.to_str());
-            },
+            }
             CatFileVariant::Exists => (), // `hash` has been verified to exist (asserted with `dereference()`)
             CatFileVariant::Size => {
                 println!("{}", header.size);
-            },
+            }
             CatFileVariant::PrettyPrint => {
-                let object_contents_str = crate::read_filename_to_bytes!(object_filename, "read object");
-                let pretty_output = cli_expect!(
-                    Object::from_compressed_bytes(&object_contents_str)
-                        .map_err(|msg| format!("Error while reading object `{object_filename}`: {msg}"))
-                );
+                let object_contents_str =
+                    crate::read_filename_to_bytes!(object_filename, "read object");
+                let pretty_output = cli_expect!(Object::from_compressed_bytes(
+                    &object_contents_str
+                )
+                .map_err(|msg| format!("Error while reading object `{object_filename}`: {msg}")));
                 print!("{pretty_output}");
-            },
+            }
         }
 
         ExitType::Ok

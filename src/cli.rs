@@ -1,10 +1,10 @@
-mod init;
-mod hash_object;
 mod cat_file;
+mod hash_object;
+mod init;
 
+use cat_file::CatFileArgs;
 use hash_object::HashObjectArgs;
 use init::InitArgs;
-use cat_file::CatFileArgs;
 
 use clap::{Parser, Subcommand};
 use std::process::ExitCode;
@@ -63,7 +63,8 @@ pub type CliResult<T> = Result<T, String>;
 
 #[macro_export]
 macro_rules! cli_expect {
-    ($result:expr /* CliResult<T> */) => { /* -> ExitType? */
+    ($result:expr /* CliResult<T> */) => {
+        /* -> ExitType? */
         match $result {
             Err(message) => {
                 eprintln!("{}", message);

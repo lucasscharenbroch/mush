@@ -1,5 +1,5 @@
-use crate::cli::MushSubcommand;
 use crate::cli::ExitType;
+use crate::cli::MushSubcommand;
 use crate::object::Object;
 
 use std::borrow::Cow;
@@ -15,7 +15,8 @@ pub struct HashObjectArgs {
 
 impl MushSubcommand for HashObjectArgs {
     fn execute(&self) -> ExitType {
-        let content = crate::read_filename_or_stdin_to_str!(self.filename, "Compute hash of object");
+        let content =
+            crate::read_filename_or_stdin_to_str!(self.filename, "Compute hash of object");
         let object = Object::Blob(Cow::Borrowed(content.as_bytes()));
         let hash = object.hash();
 

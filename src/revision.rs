@@ -4,16 +4,14 @@ use crate::{cli::CliResult, hash::Hash};
 /// (could be a hash, ref, or expression involving the two)
 pub struct RevisionSpec<'s> {
     original_input: &'s str,
-    parse_tree: RevisionSpecParseTree
+    parse_tree: RevisionSpecParseTree,
 }
 
 impl<'s> RevisionSpec<'s> {
     pub fn parse(input: &'s str) -> CliResult<Self> {
-        RevisionSpecParseTree::parse(input).map(|parse_tree| {
-            Self {
-                original_input: input,
-                parse_tree,
-            }
+        RevisionSpecParseTree::parse(input).map(|parse_tree| Self {
+            original_input: input,
+            parse_tree,
         })
     }
 
@@ -29,11 +27,12 @@ impl<'s> RevisionSpec<'s> {
     /// Attempt to locate this revision in the database;
     /// return the hash or report why it couldn't be found
     pub fn dereference(&self) -> CliResult<Hash> {
-        self.try_dereference().and_then(|hash| {
-            match hash {
-                Some(x) => Ok(x),
-                None => Err(format!("Not a valid object name: `{}`", self.original_input)),
-            }
+        self.try_dereference().and_then(|hash| match hash {
+            Some(x) => Ok(x),
+            None => Err(format!(
+                "Not a valid object name: `{}`",
+                self.original_input
+            )),
         })
     }
 }
@@ -49,9 +48,7 @@ enum RevisionSpecParseTree {
 
 impl RevisionSpecParseTree {
     fn parse(input: &str) -> CliResult<Self> {
-        let main_re = regex::Regex::new(
-            r"^(?<base>[^^~]+)(?<modifiers>[\^~].*)?"
-        ).unwrap();
+        let main_re = regex::Regex::new(r"^(?<base>[^^~]+)(?<modifiers>[\^~].*)?").unwrap();
 
         // e.g.
         // origin/master~3^2~
@@ -60,39 +57,38 @@ impl RevisionSpecParseTree {
         //              ^^^^
         //              "modifiers"
 
-        main_re.captures(input).and_then(|captures| {
-            let base_str = &captures["base"];
-            let modifiers_str = &captures["modifiers"];
+        main_re
+            .captures(input)
+            .and_then(|captures| {
+                let base_str = &captures["base"];
+                let modifiers_str = &captures["modifiers"];
 
-            let mod_re = regex::Regex::new(
-                r"([\^~])([0-9]*)"
-            ).unwrap();
+                let mod_re = regex::Regex::new(r"([\^~])([0-9]*)").unwrap();
 
-            let modifiers_opt = mod_re.captures_iter(modifiers_str)
-                .map(|captures| captures.extract())
-                .map(|(_, [operator, arg])| {
-                    let arg = if arg == "" { "1" } else { arg };
-                    arg.parse::<usize>()
-                        // Result to Option
-                        .map(|n| Some(n))
-                        .unwrap_or(None)
-                        .map(|n| (operator, n))
-                })
-                .collect::<Option<Vec<_>>>(); // sequence (fail on first None)
+                let modifiers_opt = mod_re
+                    .captures_iter(modifiers_str)
+                    .map(|captures| captures.extract())
+                    .map(|(_, [operator, arg])| {
+                        let arg = if arg == "" { "1" } else { arg };
+                        arg.parse::<usize>()
+                            // Result to Option
+                            .map(|n| Some(n))
+                            .unwrap_or(None)
+                            .map(|n| (operator, n))
+                    })
+                    .collect::<Option<Vec<_>>>(); // sequence (fail on first None)
 
-            modifiers_opt.map(|modifiers| {
-                modifiers.iter()
-                    .fold(
+                modifiers_opt.map(|modifiers| {
+                    modifiers.iter().fold(
                         Self::HashOrRef(String::from(base_str)),
-                        |acc, (operator, n)| {
-                            match *operator {
-                                "^" => RevisionSpecParseTree::NthParent(Box::new(acc), *n),
-                                "~" => RevisionSpecParseTree::NthGenerationalParent(Box::new(acc), *n),
-                                _ => panic!("Invariant error (regex with invalid modifier modifier)"),
-                            }
-                        }
+                        |acc, (operator, n)| match *operator {
+                            "^" => RevisionSpecParseTree::NthParent(Box::new(acc), *n),
+                            "~" => RevisionSpecParseTree::NthGenerationalParent(Box::new(acc), *n),
+                            _ => panic!("Invariant error (regex with invalid modifier modifier)"),
+                        },
                     )
+                })
             })
-        }).ok_or(format!("Bad revision spec: `{input}`"))
+            .ok_or(format!("Bad revision spec: `{input}`"))
     }
 }

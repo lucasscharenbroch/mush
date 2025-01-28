@@ -15,11 +15,14 @@ macro_rules! create_directory_no_overwrite {
                 if let std::io::ErrorKind::AlreadyExists = io_err.kind() {
                     eprintln!("Cannot {}: directory `{}` already exists", $reason, $dir);
                 } else {
-                    eprintln!("Failed to {}: error while creating directory `{}`: {}", $reason, $dir, io_err);
+                    eprintln!(
+                        "Failed to {}: error while creating directory `{}`: {}",
+                        $reason, $dir, io_err
+                    );
                 }
 
                 return crate::cli::ExitType::Fatal;
-            },
+            }
             _ => (),
         }
     };
@@ -33,11 +36,14 @@ macro_rules! create_directory_all {
                 if let std::io::ErrorKind::AlreadyExists = io_err.kind() {
                     eprintln!("Cannot {}: directory `{}` already exists", $reason, $dir);
                 } else {
-                    eprintln!("Failed to {}: error while creating directory `{}`: {}", $reason, $dir, io_err);
+                    eprintln!(
+                        "Failed to {}: error while creating directory `{}`: {}",
+                        $reason, $dir, io_err
+                    );
                 }
 
                 return crate::cli::ExitType::Fatal;
-            },
+            }
             _ => (),
         }
     };
@@ -50,14 +56,16 @@ macro_rules! create_file_no_overwrite {
             Err(io_err) if matches!(io_err.kind(), std::io::ErrorKind::AlreadyExists) => {
                 eprintln!("Cannot {}: file `{}` already exists", $reason, $file);
                 return crate::cli::ExitType::Fatal;
-            },
+            }
             x => x,
-        }.and_then(|mut file| {
-            std::io::Write::write_all(&mut file, $contents)
-        });
+        }
+        .and_then(|mut file| std::io::Write::write_all(&mut file, $contents));
 
         if let Err(io_err) = res {
-            eprintln!("Failed to {}: error while creating file `{}`: {}", $reason, $file, io_err);
+            eprintln!(
+                "Failed to {}: error while creating file `{}`: {}",
+                $reason, $file, io_err
+            );
             return crate::cli::ExitType::Fatal;
         }
     };
@@ -71,7 +79,7 @@ macro_rules! create_file_all_no_overwrite {
 
         crate::create_directory_all!(directory.to_str().unwrap(), $reason);
         crate::create_file_no_overwrite!(path.to_str().unwrap(), $contents, $reason);
-    }
+    };
 }
 
 #[macro_export]
@@ -80,7 +88,10 @@ macro_rules! read_file_to_str {
         match std::io::read_to_string($file) {
             Ok(string) => string,
             Err(io_err) => {
-                eprintln!("Failed to {}: error while reading file `{}`: {}", $reason, $filename, io_err);
+                eprintln!(
+                    "Failed to {}: error while reading file `{}`: {}",
+                    $reason, $filename, io_err
+                );
                 return crate::cli::ExitType::Fatal;
             }
         }
@@ -89,18 +100,19 @@ macro_rules! read_file_to_str {
 
 #[macro_export]
 macro_rules! read_file_to_bytes {
-    ($file:expr, $filename:expr, $reason:expr) => {
-        {
-            let mut res = Vec::new();
-            match std::io::Read::read_to_end(&mut $file, &mut res) {
-                Ok(_) => res,
-                Err(io_err) => {
-                    eprintln!("Failed to {}: error while reading file `{}`: {}", $reason, $filename, io_err);
-                    return crate::cli::ExitType::Fatal;
-                }
+    ($file:expr, $filename:expr, $reason:expr) => {{
+        let mut res = Vec::new();
+        match std::io::Read::read_to_end(&mut $file, &mut res) {
+            Ok(_) => res,
+            Err(io_err) => {
+                eprintln!(
+                    "Failed to {}: error while reading file `{}`: {}",
+                    $reason, $filename, io_err
+                );
+                return crate::cli::ExitType::Fatal;
             }
         }
-    };
+    }};
 }
 
 #[macro_export]
@@ -109,7 +121,10 @@ macro_rules! open_filename {
         match std::fs::File::open(&$filename) {
             Ok(file) => file,
             Err(io_err) => {
-                eprintln!("Failed to {}: error while opening file `{}`: {}", $reason, $filename, io_err);
+                eprintln!(
+                    "Failed to {}: error while opening file `{}`: {}",
+                    $reason, $filename, io_err
+                );
                 return crate::cli::ExitType::Fatal;
             }
         }
@@ -141,15 +156,20 @@ macro_rules! read_filename_to_bytes {
 #[macro_export]
 macro_rules! read_filename_or_stdin_to_str {
     ($filename:expr, $reason:expr) => {
-        if $filename == "-" { // stdin
+        if $filename == "-" {
+            // stdin
             match std::io::read_to_string(std::io::stdin()) {
                 Ok(string) => string,
                 Err(io_err) => {
-                    eprintln!("Failed to {}: error while reading stdin: {}", $reason, io_err);
+                    eprintln!(
+                        "Failed to {}: error while reading stdin: {}",
+                        $reason, io_err
+                    );
                     return crate::cli::ExitType::Fatal;
                 }
             }
-        } else { // normal filename
+        } else {
+            // normal filename
             crate::read_filename_to_str!($filename, $reason)
         }
     };
