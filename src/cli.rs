@@ -60,14 +60,28 @@ impl std::ops::Deref for CliSubcommand {
 }
 
 pub type CliResult<T> = Result<T, String>;
+pub type ContextlessCliResult<T> = Result<T, Box<dyn FnOnce(&str) -> String>>;
+
+fn with_context<T>(result: ContextlessCliResult<T>, context: &str) -> CliResult<T> {
+    result.map_err(|callback| callback(context))
+}
 
 #[macro_export]
 macro_rules! cli_expect {
-    ($result:expr /* CliResult<T> */) => {
-        /* -> ExitType? */
+    ($result:expr /* CliResult<T> */) => { /* -> ExitType? */
         match $result {
             Err(message) => {
                 eprintln!("{}", message);
+                return ExitType::Fatal;
+            }
+            Ok(x) => x,
+        }
+    };
+
+    ($result:expr /* ContextlessCliResult<T> */, $reason:expr /* &str */) => { /* -> ExitType? */
+        match $result {
+            Err(callback) => {
+                eprintln!("{}", callback($reason));
                 return ExitType::Fatal;
             }
             Ok(x) => x,

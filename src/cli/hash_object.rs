@@ -1,5 +1,8 @@
 use crate::cli::ExitType;
 use crate::cli::MushSubcommand;
+use crate::io::create_file_all_no_overwrite;
+use crate::io::dot_mush_slash;
+use crate::io::read_filename_or_stdin_to_str;
 use crate::object::Object;
 
 use std::borrow::Cow;
@@ -16,17 +19,16 @@ pub struct HashObjectArgs {
 impl MushSubcommand for HashObjectArgs {
     fn execute(&self) -> ExitType {
         let content =
-            crate::read_filename_or_stdin_to_str!(self.filename, "Compute hash of object");
+            crate::cli_expect!(read_filename_or_stdin_to_str(&self.filename), "compute hash of object");
         let object = Object::Blob(Cow::Borrowed(content.as_bytes()));
         let hash = object.hash();
 
         println!("{}", hash.as_str()); // Not a debug print
 
         if self.write_result_to_database {
-            let target_file = crate::dot_mush_slash!(object.hash().path());
-            crate::create_file_all_no_overwrite!(
-                &target_file,
-                object.compressed().as_slice(),
+            let target_file = crate::cli_expect!(dot_mush_slash(&object.hash().path()), "resolve path");
+            crate::cli_expect!(
+                create_file_all_no_overwrite(&target_file, object.compressed().as_slice()),
                 "write hash-object"
             );
         }
