@@ -1,6 +1,6 @@
 mod pretty_print;
 
-use crate::hash::Hash;
+use crate::{cli::CliResult, hash::Hash};
 
 use std::borrow::Cow;
 
@@ -18,7 +18,7 @@ impl ObjectType {
         }
     }
 
-    fn from_string(string: &str) -> Result<Self, String> {
+    fn from_string(string: &str) -> CliResult<Self> {
         match string {
             "blob" => Ok(Self::Blob),
             _ => Err(format!("Bad object type: `{string}`"))
@@ -41,8 +41,8 @@ impl<'b> Object<'b> {
         }
     }
 
-    fn unstore(mut bytes: Vec<u8>) -> Result<Self, String> {
-        fn decode_contents<'b>(tipe: ObjectType, contents: Vec<u8>) -> Result<Object<'b>, String> {
+    fn unstore(mut bytes: Vec<u8>) -> CliResult<Self> {
+        fn decode_contents<'b>(tipe: ObjectType, contents: Vec<u8>) -> CliResult<Object<'b>> {
             match tipe {
                 ObjectType::Blob => Ok(Object::Blob(Cow::Owned(contents))),
             }
@@ -70,7 +70,7 @@ impl<'b> Object<'b> {
         miniz_oxide::deflate::compress_to_vec(self.store().as_slice(), COMPRESSION_LEVEL)
     }
 
-    pub fn from_compressed_bytes(bytes: &[u8]) -> Result<Object<'b>, String> {
+    pub fn from_compressed_bytes(bytes: &[u8]) -> CliResult<Object<'b>> {
         miniz_oxide::inflate::decompress_to_vec(bytes)
             .map_err(|err| err.to_string())
             .and_then(|decompressed_bytes| {
@@ -87,7 +87,7 @@ pub struct ObjectHeader {
 }
 
 impl ObjectHeader {
-    pub fn extract_from_file(file: impl std::io::Read, object_hash: &str) -> Result<Self, String> {
+    pub fn extract_from_file(file: impl std::io::Read, object_hash: &str) -> CliResult<Self> {
         // (`object_hash` is for diagnostic only)
         // ideally there would be no IO logic in this module, but
         // efficient reading of the header (and not the rest of the object)
@@ -101,12 +101,12 @@ impl ObjectHeader {
             .map(|res| res.map_err(|io_err| io_err.to_string()))
             // take bytes until the null byte is encountered, collect errors
             .take_while(|res| res.clone().map(|b| b != b'\0').unwrap_or(true))
-            .collect::<Result<Vec<_>, _>>() // (sequence/mapM) (fail on the first err)
+            .collect::<CliResult<Vec<_>>>() // (sequence/mapM) (fail on the first err)
             .and_then(|bytes| ObjectHeader::from_bytes(bytes.as_slice()))
             .map_err(|msg| format!("Failed to read object `{object_hash}`: {msg}"))
     }
 
-    fn from_bytes(bytes: &[u8]) -> Result<Self, String> {
+    fn from_bytes(bytes: &[u8]) -> CliResult<Self> {
         // e.g. "blob 1234"
         //       ^^^^ ^^^^
         let string = String::from_utf8_lossy(bytes);

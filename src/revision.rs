@@ -1,4 +1,4 @@
-use crate::hash::Hash;
+use crate::{cli::CliResult, hash::Hash};
 
 /// A hypothetical pointer to an object (yet to be `dereference`d)
 /// (could be a hash, ref, or expression involving the two)
@@ -8,7 +8,7 @@ pub struct RevisionSpec<'s> {
 }
 
 impl<'s> RevisionSpec<'s> {
-    pub fn parse(input: &'s str) -> Result<Self, String> {
+    pub fn parse(input: &'s str) -> CliResult<Self> {
         RevisionSpecParseTree::parse(input).map(|parse_tree| {
             Self {
                 original_input: input,
@@ -19,7 +19,7 @@ impl<'s> RevisionSpec<'s> {
 
     /// Attempt to locate this revision in the database
     /// `Ok(None)` is returned if the search fails gracefully
-    pub fn try_dereference(&self) -> Result<Option<Hash>, String> {
+    pub fn try_dereference(&self) -> CliResult<Option<Hash>> {
         match &self.parse_tree {
             RevisionSpecParseTree::HashOrRef(string) => Ok(Some(Hash::Hash(string.clone()))), // TODO don't assume the input is a valid hash
             _ => todo!(),
@@ -28,7 +28,7 @@ impl<'s> RevisionSpec<'s> {
 
     /// Attempt to locate this revision in the database;
     /// return the hash or report why it couldn't be found
-    pub fn dereference(&self) -> Result<Hash, String> {
+    pub fn dereference(&self) -> CliResult<Hash> {
         self.try_dereference().and_then(|hash| {
             match hash {
                 Some(x) => Ok(x),
@@ -48,7 +48,7 @@ enum RevisionSpecParseTree {
 }
 
 impl RevisionSpecParseTree {
-    fn parse(input: &str) -> Result<Self, String> {
+    fn parse(input: &str) -> CliResult<Self> {
         let main_re = regex::Regex::new(
             r"^(?<base>[^^~]+)(?<modifiers>[\^~].*)?"
         ).unwrap();
