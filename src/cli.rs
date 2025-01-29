@@ -7,7 +7,7 @@ use hash_object::HashObjectArgs;
 use init::InitArgs;
 
 use clap::{Parser, Subcommand};
-use std::process::ExitCode;
+use std::process::{ExitCode, ExitStatus};
 
 pub enum ExitType {
     Ok,
