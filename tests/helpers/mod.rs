@@ -1,5 +1,7 @@
 extern crate tempdir;
 
+use mush as src;
+
 // abbreviates the finding of the executable and attaching the tempdir
 // also makes it less likely to accidentally use the real cwd
 // this is a macro because it returns (&mut Command), which causes
@@ -21,3 +23,20 @@ pub fn tempdir() -> tempdir::TempDir {
         .expect("failed to create temp directory for test")
 }
 
+pub fn assert_directory_exists(path: &std::path::Path) {
+    assert_eq!(
+        true,
+        std::fs::metadata(path)
+                .expect("expected path to be directory")
+                .is_dir()
+    )
+}
+
+pub fn assert_file_exists(path: &std::path::Path) {
+    assert_eq!(
+        true,
+        std::fs::metadata(path)
+                .expect("expected path to be directory")
+                .is_file()
+    )
+}
