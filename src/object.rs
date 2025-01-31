@@ -4,7 +4,7 @@ use crate::{cli::CliResult, hash::Hash};
 
 use std::borrow::Cow;
 
-const COMPRESSION_LEVEL: u8 = 6;
+const COMPRESSION_LEVEL: u8 = 1;
 
 pub enum ObjectType {
     Blob,
@@ -68,11 +68,11 @@ impl<'b> Object<'b> {
     }
 
     pub fn compressed(&self) -> Vec<u8> {
-        miniz_oxide::deflate::compress_to_vec(self.store().as_slice(), COMPRESSION_LEVEL)
+        miniz_oxide::deflate::compress_to_vec_zlib(self.store().as_slice(), COMPRESSION_LEVEL)
     }
 
     pub fn from_compressed_bytes(bytes: &[u8]) -> CliResult<Object<'b>> {
-        miniz_oxide::inflate::decompress_to_vec(bytes)
+        miniz_oxide::inflate::decompress_to_vec_zlib(bytes)
             .map_err(|err| err.to_string())
             .and_then(|decompressed_bytes| Self::unstore(decompressed_bytes))
     }
