@@ -20,7 +20,10 @@ impl<'s> RevisionSpec<'s> {
     pub fn try_dereference(&self) -> CliResult<Option<Hash>> {
         match &self.parse_tree {
             RevisionSpecParseTree::HashOrRef(string) => Ok(Some(Hash::Hash(string.clone()))), // TODO don't assume the input is a valid hash
-            _ => todo!(),
+            _ => {
+                println!("{:?}", self.parse_tree);
+                todo!()
+            },
         }
     }
 
@@ -37,6 +40,7 @@ impl<'s> RevisionSpec<'s> {
     }
 }
 
+#[derive(Debug)]
 enum RevisionSpecParseTree {
     // Many strings are ambiguous and could be either hashes or refs;
     // we can't know until checking the database, which happens after
@@ -61,7 +65,9 @@ impl RevisionSpecParseTree {
             .captures(input)
             .and_then(|captures| {
                 let base_str = &captures["base"];
-                let modifiers_str = &captures["modifiers"];
+                let modifiers_str = captures.name("modifiers")
+                    .map(|matcch| matcch.as_str())
+                    .unwrap_or("");
 
                 let mod_re = regex::Regex::new(r"([\^~])([0-9]*)").unwrap();
 

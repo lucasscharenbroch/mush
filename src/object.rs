@@ -95,7 +95,7 @@ impl ObjectHeader {
 
         // TODO factor out with "read/decode prefix" macro? or the like?
 
-        std::io::Read::bytes(flate2::read::DeflateDecoder::new(file))
+        std::io::Read::bytes(flate2::read::ZlibDecoder::new(file))
             // make the Result clonable
             .map(|res| res.map_err(|io_err| io_err.to_string()))
             // take bytes until the null byte is encountered, collect errors
