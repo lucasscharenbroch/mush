@@ -20,10 +20,7 @@ impl<'s> RevisionSpec<'s> {
     pub fn try_dereference(&self) -> CliResult<Option<Hash>> {
         match &self.parse_tree {
             RevisionSpecParseTree::HashOrRef(string) => Ok(Some(Hash::Hash(string.clone()))), // TODO don't assume the input is a valid hash
-            _ => {
-                println!("{:?}", self.parse_tree);
-                todo!()
-            },
+            _ => todo!(),
         }
     }
 
@@ -40,7 +37,6 @@ impl<'s> RevisionSpec<'s> {
     }
 }
 
-#[derive(Debug)]
 enum RevisionSpecParseTree {
     // Many strings are ambiguous and could be either hashes or refs;
     // we can't know until checking the database, which happens after
