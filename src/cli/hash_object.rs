@@ -1,6 +1,6 @@
 use crate::cli::ExitType;
 use crate::cli::MushSubcommand;
-use crate::io::create_file_all_no_overwrite;
+use crate::io::create_file_all;
 use crate::io::dot_mush_slash;
 use crate::io::read_filename_or_stdin_to_str;
 use crate::object::Object;
@@ -29,7 +29,7 @@ impl MushSubcommand for HashObjectArgs {
             if self.write_result_to_database {
                 let target_file = crate::cli_expect!(dot_mush_slash(&object.hash().path()), "resolve path");
                 crate::cli_expect!(
-                    create_file_all_no_overwrite(&target_file, object.compressed().as_slice()),
+                    create_file_all(&target_file, object.compressed().as_slice()),
                     "write hash-object"
                 );
             }

@@ -1,12 +1,14 @@
 mod cat_file;
 mod hash_object;
 mod init;
+mod update_index;
 
 use cat_file::CatFileArgs;
 use hash_object::HashObjectArgs;
 use init::InitArgs;
 
 use clap::{Parser, Subcommand};
+use update_index::UpdateIndexArgs;
 use std::process::{ExitCode, ExitStatus};
 
 pub enum ExitType {
@@ -35,12 +37,16 @@ pub struct CliArgs {
 
 #[derive(Subcommand)]
 pub enum CliSubcommand {
+    // descriptions copied/inspired by git manpages
+
     /// Create an empty Mush repository in the current directory
     Init(InitArgs),
     /// Compute the hash of a file, optionally creating an object
     HashObject(HashObjectArgs),
     /// Provide contents or details of repository objects
     CatFile(CatFileArgs),
+    /// Register file contents in the working tree to the index
+    UpdateIndex(UpdateIndexArgs),
 }
 
 pub trait MushSubcommand {
@@ -55,6 +61,7 @@ impl std::ops::Deref for CliSubcommand {
             Self::Init(args) => args,
             Self::HashObject(args) => args,
             Self::CatFile(args) => args,
+            Self::UpdateIndex(args) => args,
         }
     }
 }

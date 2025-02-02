@@ -49,7 +49,7 @@ impl CatFileVariantArgs {
     }
 }
 
-#[derive(Clone, clap::ValueEnum)]
+#[derive(Clone)]
 enum CatFileVariant {
     Type,
     PrettyPrint,

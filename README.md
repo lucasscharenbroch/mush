@@ -8,6 +8,7 @@ A minimalist git clone
 - `mush init`
 - `mush hash-object`
 - `mush cat-file`
+- `mush update-index`
 
 ## To Do
 - [X] set up cli argparse
@@ -24,8 +25,7 @@ A minimalist git clone
     - [ ] heads
     - [ ] tags
     - [ ] update-ref (update the reflog, set contents of heads/refs/...)
-- [ ] index
-- [ ] init
+- [X] index
 - [ ] status / add
 - [ ] log
 - [ ] commit
