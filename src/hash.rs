@@ -17,8 +17,13 @@ impl Hash {
     }
 
     pub fn path(&self) -> String {
-        let (prefix, suffix) = self.split_at(2);
-        format!("objects/{}/{}", prefix, suffix)
+        if self.len() < 2 {
+            // obviously not a correct hash, but just return something plausible
+            format!("objects/{}", self.as_str())
+        } else {
+            let (prefix, suffix) = self.split_at(2);
+            format!("objects/{prefix}/{suffix}")
+        }
     }
 }
 
