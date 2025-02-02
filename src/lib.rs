@@ -6,6 +6,7 @@ mod io;
 mod object;
 mod refs;
 mod revision; // plural to avoid name collision with `ref` keyword
+mod index;
 pub mod cli;
 
 const SEMANTIC_VERSION: &'static str = "1.0";
