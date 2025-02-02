@@ -109,11 +109,34 @@ pub fn read_filename_or_stdin_to_str(filename: &str) -> ContextlessCliResult<Str
     }
 }
 
+pub fn dot_mush_folder() -> ContextlessCliResult<String> {
+    const DOT_MUSH: &'static str = ".mush";
+
+    let mut dir = std::env::current_dir()
+        .map_err::<Box<dyn FnOnce(&str) -> String>, _>(|io_err|
+            Box::new(move |reason| format!("Failed to {}: error while getting cwd: {}", reason, io_err))
+        )?;
+
+    loop {
+        let target = dir.join(DOT_MUSH);
+        if target.exists() {
+            return target.to_str()
+                .map(|str| String::from(str))
+                .ok_or::<Box<dyn FnOnce(&str) -> String>>(
+                    Box::new(move |reason| format!("Failed to {}: error while getting cwd: failed to convert path to string", reason))
+                );
+        }
+
+        if let Some(parent) = dir.parent() {
+                dir = parent.to_path_buf();
+        } else {
+            break;
+        }
+    }
+
+    Err(Box::new(move |reason| format!("Failed to {}: not a mush repository", reason)))
+}
+
 pub fn dot_mush_slash(path: &str) -> ContextlessCliResult<String> {
-
-    // TODO traverse upward and try to find `.mush`;
-    // assert that cwd is in a workspace
-    // (not directly within `.mush`, but a child of a directory adjacent to it)
-
-    Ok(format!(".mush/{}", path))
+    Ok(format!("{}/{}", dot_mush_folder()?, path))
 }

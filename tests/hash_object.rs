@@ -7,7 +7,7 @@ use helpers::*;
 #[test]
 fn hash_files() {
     let dir = tempdir();
-    mush_init_clean_repo(&dir);
+    // mush_init_clean_repo(&dir); // don't need a mush repo if not writing
 
     [
         ("246.txt", "pedal\nstroke\nmush\n246\n", "6b71b21eca93ae1244825d70173ce4185efabe27"),
@@ -23,7 +23,7 @@ fn hash_files() {
                 .output()
                 .unwrap();
 
-        assert!(output.status.success());
+        assert_output_success(&output);
         assert_eq!(
             format!("{hash}\n"),
             String::from_utf8(output.stdout).unwrap()
@@ -69,7 +69,7 @@ fn write_files() {
                 .output()
                 .unwrap();
 
-        assert!(output.status.success());
+        assert_output_success(&output);
         assert_eq!(
             format!("{hash}\n"),
             String::from_utf8(output.stdout).unwrap()
@@ -89,7 +89,7 @@ fn write_files() {
 #[test]
 fn hash_stdin() {
     let dir = tempdir();
-    mush_init_clean_repo(&dir);
+    // mush_init_clean_repo(&dir); // don't need a mush repo if not writing
 
     // example from git book https://git-scm.com/book/en/v2/Git-Internals-Git-Objects
 
@@ -108,7 +108,7 @@ fn hash_stdin() {
 
     let output = hash_object_process.wait_with_output().unwrap();
 
-    assert!(output.status.success());
+    assert_output_success(&output);
     assert_eq!(
         "d670460b4b4aece5915caf5c68d12f560a9fe3e4\n",
         String::from_utf8(output.stdout).unwrap()
@@ -137,7 +137,7 @@ fn hash_stdin_with_pipe() {
             .output()
             .unwrap();
 
-    assert!(output.status.success());
+    assert_output_success(&output);
     assert_eq!(
         "d670460b4b4aece5915caf5c68d12f560a9fe3e4\n",
         String::from_utf8(output.stdout).unwrap()
@@ -167,7 +167,7 @@ fn write_stdin() {
 
     let output = hash_object_process.wait_with_output().unwrap();
 
-    assert!(output.status.success());
+    assert_output_success(&output);
     assert_eq!(
         "d670460b4b4aece5915caf5c68d12f560a9fe3e4\n",
         String::from_utf8(output.stdout).unwrap()

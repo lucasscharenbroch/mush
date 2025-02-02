@@ -5,6 +5,7 @@ use helpers::*;
 #[test]
 fn exists() {
     let dir = tempdir();
+    mush_init_clean_repo(&dir);
 
     [
         ("grocery-list.txt", "- eggs\n- pork roll\n- cheese\n- kaiser bun\n", "64dee893c45dee4f826bd62978abebf31c3cdcba", true),
@@ -24,7 +25,7 @@ fn exists() {
                 .output()
                 .unwrap();
 
-        assert!(output.status.success());
+        assert_output_success(&output);
         assert_eq!(
             format!("{hash}\n"),
             String::from_utf8(output.stdout).unwrap()
@@ -44,6 +45,7 @@ fn exists() {
 #[test]
 fn tipe() {
     let dir = tempdir();
+    mush_init_clean_repo(&dir);
 
     [
         ("grocery-list.txt", "- eggs\n- pork roll\n- cheese\n- kaiser bun\n", "64dee893c45dee4f826bd62978abebf31c3cdcba", "blob"),
@@ -57,7 +59,7 @@ fn tipe() {
                 .output()
                 .unwrap();
 
-        assert!(output.status.success());
+        assert_output_success(&output);
         assert_eq!(
             format!("{hash}\n"),
             String::from_utf8(output.stdout).unwrap()
@@ -70,7 +72,7 @@ fn tipe() {
                 .output()
                 .unwrap();
 
-        assert!(output.status.success());
+        assert_output_success(&output);
         assert_eq!(
             format!("{typename}\n"),
             String::from_utf8(output.stdout).unwrap()
@@ -83,6 +85,7 @@ fn tipe() {
 #[test]
 fn size() {
     let dir = tempdir();
+    mush_init_clean_repo(&dir);
 
     [
         ("grocery-list.txt", "- eggs\n- pork roll\n- cheese\n- kaiser bun\n", "64dee893c45dee4f826bd62978abebf31c3cdcba", 41),
@@ -102,7 +105,7 @@ fn size() {
                 .output()
                 .unwrap();
 
-        assert!(output.status.success());
+        assert_output_success(&output);
         assert_eq!(
             format!("{hash}\n"),
             String::from_utf8(output.stdout).unwrap()
@@ -115,7 +118,7 @@ fn size() {
                 .output()
                 .unwrap();
 
-        assert!(output.status.success());
+        assert_output_success(&output);
         assert_eq!(
             format!("{size_in_bytes}\n"),
             String::from_utf8(output.stdout).unwrap()
@@ -126,6 +129,7 @@ fn size() {
 #[test]
 fn pretty() {
     let dir = tempdir();
+    mush_init_clean_repo(&dir);
 
     [
         ("grocery-list.txt", "- eggs\n- pork roll\n- cheese\n- kaiser bun\n", "64dee893c45dee4f826bd62978abebf31c3cdcba"),
@@ -145,7 +149,7 @@ fn pretty() {
                 .output()
                 .unwrap();
 
-        assert!(output.status.success());
+        assert_output_success(&output);
         assert_eq!(
             format!("{hash}\n"),
             String::from_utf8(output.stdout).unwrap()
@@ -158,7 +162,7 @@ fn pretty() {
                 .output()
                 .unwrap();
 
-        assert!(output.status.success());
+        assert_output_success(&output);
         assert_eq!(
             format!("{contents}"),
             String::from_utf8(output.stdout).unwrap()

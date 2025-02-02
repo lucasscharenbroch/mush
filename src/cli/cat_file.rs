@@ -3,7 +3,7 @@ use crate::cli::MushSubcommand;
 use crate::cli_expect;
 use crate::io::open_filename;
 use crate::io::read_filename_to_bytes;
-use crate::io::{dot_mush_slash};
+use crate::io::dot_mush_slash;
 use crate::object::Object;
 use crate::revision::RevisionSpec;
 

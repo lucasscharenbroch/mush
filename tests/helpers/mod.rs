@@ -66,3 +66,11 @@ pub fn create_file_with_contents(directory: &std::path::Path, filename: &str, co
     let mut file = std::fs::File::create(directory.join(filename)).unwrap();
     file.write_all(contents.as_bytes()).unwrap();
 }
+
+pub fn create_dir(directory: &std::path::Path) {
+    std::fs::create_dir(directory).unwrap();
+}
+
+pub fn assert_output_success(output: &std::process::Output) {
+    assert!(output.status.success(), "stderr = ```{}```", String::from_utf8(output.stderr.clone()).unwrap());
+}
