@@ -2,13 +2,25 @@
 // Docs for git index format:
 // https://github.com/git/git/blob/master/Documentation/gitformat-index.txt
 
-use std::os::unix::fs::MetadataExt;
+use std::{collections::BTreeMap, os::unix::fs::MetadataExt};
 
-use crate::{cli::ContextlessCliResult, hash::Hash, io::file_metadata};
+use crate::hash::Hash;
+
+/// String newtype wrapper for a filename relative to the repo's base, no leading slash
+#[derive(PartialEq, Eq, PartialOrd, Ord, Clone)]
+pub struct RepoRelativeFilename(String);
+
+impl std::ops::Deref for RepoRelativeFilename {
+    type Target = String;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 // represents the staging area. Serialized into .mush/index
 pub struct Index {
-    entries: Vec<IndexEntry>
+    entries: BTreeMap<RepoRelativeFilename, IndexEntry>
 }
 
 pub struct IndexEntry {
@@ -23,14 +35,14 @@ pub struct IndexEntry {
     uid: u32, // uid [32]
     gid: u32, // gid [32]
     size: u64, // size [32]
-    hash: String, // [160]
+    hash: Hash, // [160]
 
     // (git) flags [16]
     assume_valid: bool,
     // TODO merge stage
     name_length: u16, // [12], min(0xFFF, object_name.len())
 
-    file_name: String, // [null-terminated string]
+    file_name: RepoRelativeFilename, // [null-terminated string]
 }
 
 impl Index {
@@ -40,7 +52,7 @@ impl Index {
             &2u32.to_be_bytes(), // version 2
             &(self.entries.len() as u32).to_be_bytes(),
             self.entries.iter()
-                .flat_map(|entry| entry.serialize())
+                .flat_map(|(_filename, entry)| entry.serialize())
                 .collect::<Vec<_>>()
                 .as_slice(),
             &0u16.to_be_bytes(), // size of extension
@@ -54,11 +66,11 @@ impl Index {
 
     pub fn new() -> Self {
         Index {
-            entries: vec![],
+            entries: BTreeMap::new(),
         }
     }
 
-    pub fn entries(&mut self) -> &mut Vec<IndexEntry> {
+    pub fn entries(&mut self) -> &mut BTreeMap<RepoRelativeFilename, IndexEntry> {
         &mut self.entries
     }
 }
@@ -76,7 +88,7 @@ impl IndexEntry {
             &self.uid.to_be_bytes(),
             &self.gid.to_be_bytes(),
             &(self.size as u32).to_be_bytes(),
-            hex::decode(self.hash.as_bytes()).unwrap().as_slice(),
+            self.hash.as_bytes(),
             &(
                 self.name_length.min(0xFFF) |
                 ((if self.assume_valid { 1 } else { 0 }) << 15)
@@ -86,27 +98,60 @@ impl IndexEntry {
         ].concat()
     }
 
-    pub fn new(file_name: &str, hash: &str) -> ContextlessCliResult<Self> {
-        let stat = file_metadata(file_name)?;
-
-        // TODO validate hash
-        let hash = hash;
-        // TODO canonicalize filename (relative to repo base, no leading dot or slash)
-        let canonical_name = file_name;
-
-        Ok(IndexEntry {
-            metadata_change_time: (stat.ctime(), stat.ctime_nsec()),
-            data_change_time: (stat.mtime(), stat.mtime_nsec()),
-            device: stat.dev(),
-            inode: stat.ino(),
-            mode: stat.mode(),
-            uid: stat.uid(),
-            gid: stat.gid(),
-            size: stat.size(),
-            hash: String::from(hash),
+    pub fn new(filename: RepoRelativeFilename, hash: Hash, metadata: std::fs::Metadata) -> Self {
+        IndexEntry {
+            metadata_change_time: (metadata.ctime(), metadata.ctime_nsec()),
+            data_change_time: (metadata.mtime(), metadata.mtime_nsec()),
+            device: metadata.dev(),
+            inode: metadata.ino(),
+            mode: metadata.mode(),
+            uid: metadata.uid(),
+            gid: metadata.gid(),
+            size: metadata.size(),
+            hash,
             assume_valid: false,
-            name_length: canonical_name.len() as u16,
-            file_name: String::from(canonical_name),
-        })
+            name_length: filename.len() as u16,
+            file_name: filename,
+        }
     }
+}
+
+// this conceptually belongs in the io module, but put here to keep
+// construction of `RepoRelativeFilename` private to this module
+/// Convert a filename to its canonical representation in the index
+/// (relative to the mush repository, without any leading slash)
+pub fn repo_canononicalize(filename: &str) -> crate::cli::ContextlessCliResult<RepoRelativeFilename> {
+    let filename = String::from(filename);
+    let repo_directory = crate::io::repo_folder()?;
+    let repo_directory = crate::io::canonicalize(&repo_directory)?;
+
+    let canonical_filename = crate::io::canonicalize(&filename)?;
+
+    eprintln!("a: {canonical_filename:?} b: {repo_directory:?}");
+
+    canonical_filename
+        .strip_prefix(&repo_directory)
+        .map_err(|err| format!("{err}"))
+        .and_then(|path| path.to_str().ok_or(String::from("Failed to convert path to string")))
+        .map(|path_str| RepoRelativeFilename(String::from(path_str)))
+        .map_err::<Box<dyn FnOnce(&str) -> String>, _>(
+            |err_str|
+            Box::new(move |reason| format!("Failed to {}: error while reading file `{}`: {}", reason, filename, err_str))
+        )
+
+    /*
+    std::path::Path::new(&filename).canonicalize()
+        .map_err(|io_err| io_err.to_string())
+        .and_then(|file_path|
+            file_path.strip_prefix(&mush_directory)
+                .map_err(|err| format!("{err}"))
+                .and_then(|path| path.to_str().ok_or(String::from("Failed to convert path to string")))
+                .map(|path_str| String::from(path_str))
+        )
+        .map_err::<Box<dyn FnOnce(&str) -> String>, _>(
+            |io_err|
+            Box::new(move |reason| format!("Failed to {}: error while reading file `{}`: {}", reason, filename, io_err))
+        )
+        .map(|str| RepoRelativeFilename(String::from(str)))
+    */
 }

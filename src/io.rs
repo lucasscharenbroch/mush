@@ -1,4 +1,6 @@
-use crate::cli::{CliResult, ContextlessCliResult};
+use std::path::Path;
+
+use crate::{cli::{CliResult, ContextlessCliResult}, index::RepoRelativeFilename};
 
 pub fn create_directory_no_overwrite(directory: &str) -> ContextlessCliResult<()> {
     match std::fs::create_dir(directory) {
@@ -139,7 +141,7 @@ pub fn file_metadata(filename: &str) -> ContextlessCliResult<std::fs::Metadata> 
         )
 }
 
-pub fn dot_mush_folder() -> ContextlessCliResult<String> {
+pub fn repo_folder() -> ContextlessCliResult<String> {
     const DOT_MUSH: &'static str = ".mush";
 
     let mut dir = std::env::current_dir()
@@ -150,7 +152,7 @@ pub fn dot_mush_folder() -> ContextlessCliResult<String> {
     loop {
         let target = dir.join(DOT_MUSH);
         if target.exists() {
-            return target.to_str()
+            return dir.to_str()
                 .map(|str| String::from(str))
                 .ok_or::<Box<dyn FnOnce(&str) -> String>>(
                     Box::new(move |reason| format!("Failed to {}: error while getting cwd: failed to convert path to string", reason))
@@ -167,6 +169,21 @@ pub fn dot_mush_folder() -> ContextlessCliResult<String> {
     Err(Box::new(move |reason| format!("Failed to {}: not a mush repository", reason)))
 }
 
+pub fn dot_mush_folder() -> ContextlessCliResult<String> {
+    repo_folder()
+        .map(|path| format!("{path}/.mush"))
+}
+
 pub fn dot_mush_slash(path: &str) -> ContextlessCliResult<String> {
     Ok(format!("{}/{}", dot_mush_folder()?, path))
+}
+
+pub fn canonicalize(path: &str) -> ContextlessCliResult<std::path::PathBuf> {
+    let path = String::from(path);
+    std::path::Path::new(&path)
+        .canonicalize()
+        .map_err::<Box<dyn FnOnce(&str) -> String>, _>(
+            |io_err|
+            Box::new(move |reason| format!("Failed to {}: error while canonicalizing filename `{}`: {}", reason, path, io_err))
+        )
 }

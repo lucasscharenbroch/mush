@@ -1,10 +1,13 @@
 use crate::cli::ExitType;
 use crate::cli::MushSubcommand;
 use crate::cli_expect;
+use crate::hash::Hash;
+use crate::index::repo_canononicalize;
 use crate::index::Index;
 use crate::index::IndexEntry;
 use crate::io::create_file;
 use crate::io::dot_mush_slash;
+use crate::io::file_metadata;
 
 #[derive(clap::Args)]
 pub struct UpdateIndexArgs {
@@ -53,10 +56,16 @@ impl MushSubcommand for UpdateIndexArgs {
                     Index::new()
                 };
 
-                // TODO check if file already exists in index
+                let metadata = cli_expect!(file_metadata(&self.file), "read file metadata");
+                let filename = cli_expect!(repo_canononicalize(&self.file), "canonicalize filename");
+                let hash = cli_expect!(
+                    Hash::try_from_str(&hash)
+                        .ok_or(format!("Bad hash: `{}`", hash))
+                );
 
-                index.entries().push(
-                    cli_expect!(IndexEntry::new(&self.file, &hash), "create index entry")
+                index.entries().insert(
+                    filename.clone(),
+                    IndexEntry::new(filename, hash, metadata)
                 );
 
                 cli_expect!(

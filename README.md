@@ -15,7 +15,7 @@ A minimalist git clone
 - [X] init
 - [X] hash-object
 - [X] cat-file
-- [ ] update-index
+- [X] update-index
 - [ ] write-tree
 - [ ] objects (creation, hashing, compression)
     - [X] blobs

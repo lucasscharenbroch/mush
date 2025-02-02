@@ -15,7 +15,7 @@ impl Hash {
         }
     }
 
-    pub fn from_str(string: &str) -> Option<Self> {
+    pub fn try_from_str(string: &str) -> Option<Self> {
         hex::decode(string).ok()
             .and_then(|byte_vec| {
                 byte_vec.try_into()
