@@ -19,7 +19,7 @@ impl<'s> RevisionSpec<'s> {
     /// `Ok(None)` is returned if the search fails gracefully
     pub fn try_dereference(&self) -> CliResult<Option<Hash>> {
         match &self.parse_tree {
-            RevisionSpecParseTree::HashOrRef(string) => Ok(Some(Hash::Hash(string.clone()))), // TODO don't assume the input is a valid hash
+            RevisionSpecParseTree::HashOrRef(string) => Ok(Some(Hash::from_str(string).unwrap())), // TODO don't assume the input is a valid hash
             _ => todo!(),
         }
     }

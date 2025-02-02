@@ -4,7 +4,7 @@
 
 use std::os::unix::fs::MetadataExt;
 
-use crate::{cli::ContextlessCliResult, io::file_metadata};
+use crate::{cli::ContextlessCliResult, hash::Hash, io::file_metadata};
 
 // represents the staging area. Serialized into .mush/index
 pub struct Index {
@@ -35,15 +35,21 @@ pub struct IndexEntry {
 
 impl Index {
     pub fn serialize(&self) -> Vec<u8> {
-        [
+        let mut byte_content = [
             &b"DIRC"[..], // signature, stands for "dircache"
             &2u32.to_be_bytes(), // version 2
             &(self.entries.len() as u32).to_be_bytes(),
             self.entries.iter()
                 .flat_map(|entry| entry.serialize())
                 .collect::<Vec<_>>()
-                .as_slice()
-        ].concat()
+                .as_slice(),
+            &0u16.to_be_bytes(), // size of extension
+        ].concat();
+
+        let checksum = Hash::digest(&byte_content);
+        byte_content.extend(checksum.as_bytes());
+
+        byte_content
     }
 
     pub fn new() -> Self {
@@ -66,10 +72,11 @@ impl IndexEntry {
             &(self.data_change_time.1 as u32).to_be_bytes(),
             &(self.device as u32).to_be_bytes(),
             &(self.inode as u32).to_be_bytes(),
+            &self.mode.to_be_bytes(),
             &self.uid.to_be_bytes(),
             &self.gid.to_be_bytes(),
             &(self.size as u32).to_be_bytes(),
-            self.hash.as_bytes(), &b"\0"[..],
+            hex::decode(self.hash.as_bytes()).unwrap().as_slice(),
             &(
                 self.name_length.min(0xFFF) |
                 ((if self.assume_valid { 1 } else { 0 }) << 15)

@@ -48,7 +48,7 @@ impl MushSubcommand for UpdateIndexArgs {
                 let index_file_name = cli_expect!(dot_mush_slash("index"), "resolve path");
 
                 let mut index = if std::path::Path::new(&index_file_name).exists() {
-                    todo!("read, deserialize index from file")
+                    todo!("read, deserialize index from file") // TODO also verify index checksum
                 } else {
                     Index::new()
                 };

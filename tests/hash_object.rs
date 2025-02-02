@@ -81,7 +81,7 @@ fn write_files() {
 
         assert_file_contents(
             &dir.path().join( format!(".mush/objects/{}/{}", prefix, suffix)),
-            object.to_vec()
+            object
         )
     });
 }
@@ -175,7 +175,7 @@ fn write_stdin() {
 
     assert_file_contents(
         &dir.path().join(".mush/objects/d6/70460b4b4aece5915caf5c68d12f560a9fe3e4"),
-        vec![ // "blob 13\0test content\n" compressed with zlib
+        &vec![ // "blob 13\0test content\n" compressed with zlib
         //  zlib
         //  vvvv
         //        vvvv no compression/low

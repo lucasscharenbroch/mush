@@ -64,7 +64,7 @@ impl<'b> Object<'b> {
     }
 
     pub fn hash(&self) -> Hash {
-        Hash::digest(self.store())
+        Hash::digest(&self.store())
     }
 
     pub fn compressed(&self) -> Vec<u8> {

@@ -52,7 +52,7 @@ fn hash_file_write_and_cat_file_in_repository_subdirectory() {
 
         assert_file_contents(
             &dir.path().join( format!(".mush/objects/{}/{}", prefix, suffix)),
-            object.to_vec()
+            object
         )
     });
 }
