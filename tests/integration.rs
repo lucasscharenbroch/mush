@@ -6,7 +6,7 @@ use helpers::*;
 fn hash_file_write_and_cat_file_in_repository_subdirectory() {
     let dir = tempdir();
     let subdir = dir.path().join("subdirectory-name");
-    create_dir(subdir.as_path());
+    create_dir(&subdir, "");
     mush_init_clean_repo(&dir);
 
     const FILES: &[(&str, &str, &str, &[u8])] = &[

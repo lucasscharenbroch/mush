@@ -8,8 +8,9 @@ use helpers::*;
 fn create_new_index() {
     let dir = tempdir();
     mush_init_clean_repo(&dir);
+    create_dir(dir.path(), "x");
 
-    let filename = "999.txt";
+    let filename = "x/999.txt";
     let contents = "pedal\nstroke\nmush\n999\n";
     let hash = "99622a960c9f3d0232df4d90149b666c11159b9e";
 
@@ -44,8 +45,8 @@ fn create_new_index() {
              0x9f, 0x3d, 0x02, 0x32, 0xdf,
              0x4d, 0x90, 0x14, 0x9b, 0x66,
              0x6c, 0x11, 0x15, 0x9b, 0x9e], // hash (`hex::encode(hash)`)
-            &[0x00, 0x07], // flags
-            &[0x39, 0x39, 0x39, 0x2e, 0x74, 0x78, 0x74, 0x00], // "999.txt\0"
+            &[0x00, 0x09], // flags
+            &[0x78, 0x2f, 0x39, 0x39, 0x39, 0x2e, 0x74, 0x78, 0x74, 0x00], // "x/999.txt\0"
             &[0x00, 0x00], // 0 extensions
         ].concat());
 
@@ -229,7 +230,7 @@ fn remove_until_empty() {
     let output = mush!(dir)
             .arg("update-index")
             .arg("--remove")
-            .arg("999.txt")
+            .arg("./999.txt")
             .output()
             .unwrap();
 

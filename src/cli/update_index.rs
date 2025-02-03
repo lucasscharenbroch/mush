@@ -71,7 +71,7 @@ impl MushSubcommand for UpdateIndexArgs {
 
                 cli_expect!(
                     index.entries().remove(&filename)
-                        .ok_or("No index entry for {filename}")
+                        .ok_or(format!("No index entry for {filename}"))
                 );
             }
         }

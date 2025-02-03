@@ -18,6 +18,12 @@ impl std::ops::Deref for RepoRelativeFilename {
     }
 }
 
+impl std::fmt::Display for RepoRelativeFilename {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self)
+    }
+}
+
 // represents the staging area. Serialized into .mush/index
 pub struct Index {
     entries: BTreeMap<RepoRelativeFilename, IndexEntry>

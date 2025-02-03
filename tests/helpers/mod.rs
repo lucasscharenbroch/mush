@@ -71,8 +71,8 @@ pub fn create_file_with_contents(directory: &std::path::Path, filename: &str, co
     create_file_with_byte_contents(directory, filename, contents.as_bytes())
 }
 
-pub fn create_dir(directory: &std::path::Path) {
-    std::fs::create_dir(directory).unwrap();
+pub fn create_dir(base_directory: &std::path::Path, dirname: &str) {
+    std::fs::create_dir(base_directory.join(dirname)).unwrap();
 }
 
 pub fn assert_output_success(output: &std::process::Output) {
