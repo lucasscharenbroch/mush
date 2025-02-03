@@ -61,10 +61,14 @@ pub fn assert_file_contents(path: &std::path::Path, contents: &impl AsRef<[u8]>)
     )
 }
 
-pub fn create_file_with_contents(directory: &std::path::Path, filename: &str, contents: &str) -> std::fs::File {
+pub fn create_file_with_byte_contents(directory: &std::path::Path, filename: &str, contents: &[u8]) -> std::fs::File {
     let mut file = std::fs::File::create(directory.join(filename)).unwrap();
-    file.write_all(contents.as_bytes()).unwrap();
+    file.write_all(contents).unwrap();
     file
+}
+
+pub fn create_file_with_contents(directory: &std::path::Path, filename: &str, contents: &str) -> std::fs::File {
+    create_file_with_byte_contents(directory, filename, contents.as_bytes())
 }
 
 pub fn create_dir(directory: &std::path::Path) {
