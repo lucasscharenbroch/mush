@@ -138,6 +138,8 @@ impl IndexEntry {
                 ((if self.assume_valid { 1 } else { 0 }) << 15)
                 // TODO merge stage?
             ).to_be_bytes(),
+            // git adds extra null bytes to pad this to a multiple of 8 bytes.
+            // we won't do that.
             self.file_name.as_bytes(), &b"\0"[..],
         ].concat()
     }
@@ -227,7 +229,7 @@ pub fn repo_canononicalize(filename: &str) -> crate::cli::ContextlessCliResult<R
     let repo_directory = crate::io::repo_folder()?;
     let repo_directory = crate::io::canonicalize(&repo_directory)?;
 
-    let canonical_filename = crate::io::canonicalize(&filename)?;
+    let canonical_filename = crate::io::canonicalize_without_forcing_existance(&filename)?;
 
     canonical_filename
         .strip_prefix(&repo_directory)

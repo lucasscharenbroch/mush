@@ -186,6 +186,21 @@ pub fn dot_mush_slash(path: &str) -> ContextlessCliResult<String> {
     Ok(format!("{}/{}", dot_mush_folder()?, path))
 }
 
+pub fn canonicalize_without_forcing_existance(path_str: &str) -> ContextlessCliResult<std::path::PathBuf> {
+    let path = std::path::Path::new(path_str);
+    if path.exists() {
+        canonicalize(path_str)
+    } else if path.is_absolute() {
+        Ok(path.to_path_buf())
+    } else {
+        std::env::current_dir()
+            .map(|cwd| cwd.join(path))
+            .map_err::<Box<dyn FnOnce(&str) -> String>, _>(|io_err|
+                Box::new(move |reason| format!("Failed to {}: error while getting cwd: {}", reason, io_err))
+            )
+    }
+}
+
 pub fn canonicalize(path: &str) -> ContextlessCliResult<std::path::PathBuf> {
     let path = String::from(path);
     std::path::Path::new(&path)
