@@ -27,7 +27,7 @@ pub struct IndexEntry {
     // based on [MetadataExt](https://doc.rust-lang.org/std/os/unix/fs/trait.MetadataExt.html) types
     // bit sizes in serialized representation are in brackets
 
-    metadata_change_time: (i64, i64), // ctime, mtime_nsec [32, 32]
+    metadata_change_time: (i64, i64), // ctime, ctime_nsec [32, 32]
     data_change_time: (i64, i64), // mtime, mtime_nsec [32, 32]
     device: u64, // dev [32]
     inode: u64, // ino [32]
@@ -64,6 +64,50 @@ impl Index {
         byte_content
     }
 
+    pub fn deserialize(bytes: &impl AsRef<[u8]>) -> Result<Self, String> {
+        let bytes = bytes.as_ref();
+
+        const MIN_POSSIBLE_BYTE_LENGTH: usize = 34;
+
+        if bytes.len() < MIN_POSSIBLE_BYTE_LENGTH {
+            return Err(String::from("Malformed index: header too small"));
+        }
+
+        let dirc = &bytes[..4];
+        let version = u32::from_be_bytes(bytes[4..8].try_into().unwrap());
+        let num_entries = u32::from_be_bytes(bytes[8..12].try_into().unwrap());
+        let checksum = Hash::from_bytes(bytes[bytes.len() - 20..].try_into().unwrap());
+        let checksum_input = &bytes[..bytes.len() - 20];
+        let mut entry_list_bytes = bytes[12..bytes.len() - 22].iter().map(|b| *b).peekable();
+
+        if dirc != b"DIRC" {
+            return Err(format!("Malformed index: bad signature: {:?}", dirc));
+        }
+
+        if version != 2 {
+            return Err(format!("Malformed index: bad version: {version} (expected 2)"));
+        }
+
+        if Hash::digest(&checksum_input.to_vec()) != checksum {
+            return Err(format!("Malformed index: failed checksum"));
+        }
+
+        let mut entries = BTreeMap::new();
+
+        while entry_list_bytes.peek().is_some() {
+            let entry = IndexEntry::deserialize(&mut entry_list_bytes)?;
+            entries.insert(entry.file_name.clone(), entry);
+        }
+
+        if entries.len() != num_entries as usize {
+            return Err(format!("Malformed index: failed to parse expected number of entries"));
+        }
+
+        Ok(Index {
+            entries
+        })
+    }
+
     pub fn new() -> Self {
         Index {
             entries: BTreeMap::new(),
@@ -98,6 +142,64 @@ impl IndexEntry {
         ].concat()
     }
 
+    pub fn deserialize(bytes: &mut impl Iterator<Item = u8>) -> Result<Self, String> {
+        const FIXED_FIELDS_BYTE_SIZE: usize = 62; // all fields except the file name (which is variable-length)
+
+        let header = bytes.take(FIXED_FIELDS_BYTE_SIZE).collect::<Vec<_>>();
+
+        if header.len() < FIXED_FIELDS_BYTE_SIZE {
+            return Err(String::from("Malformed index entry: too small"))
+        }
+
+        let ctime = u32::from_be_bytes(header[0..4].try_into().unwrap());
+        let ctime_nsec = u32::from_be_bytes(header[4..8].try_into().unwrap());
+        let mtime = u32::from_be_bytes(header[8..12].try_into().unwrap());
+        let mtime_nsec = u32::from_be_bytes(header[12..16].try_into().unwrap());
+        let dev = u32::from_be_bytes(header[16..20].try_into().unwrap());
+        let ino = u32::from_be_bytes(header[20..24].try_into().unwrap());
+        let mode = u32::from_be_bytes(header[24..28].try_into().unwrap());
+        let uid = u32::from_be_bytes(header[28..32].try_into().unwrap());
+        let gid = u32::from_be_bytes(header[32..36].try_into().unwrap());
+        let size = u32::from_be_bytes(header[36..40].try_into().unwrap());
+        let hash = Hash::from_bytes(header[40..60].try_into().unwrap());
+        let flags = u16::from_be_bytes(header[60..62].try_into().unwrap());
+        let filename_length = flags & 0xFFF;
+
+        let filename_bytes = if filename_length < 0xFFF {
+            // filename_length should be correct. No need to linear scan for null-byte.
+            let res = bytes.take(filename_length as usize).collect::<Vec<_>>();
+
+            if bytes.next() != Some(b'\0') {
+                return Err(String::from("Incorrect filename length flag in index entry"));
+            }
+
+            res
+        } else {
+            // the take_while should consume the null byte
+            bytes.take_while(|b| *b != b'\0')
+                .collect::<Vec<_>>()
+        };
+
+        let file_name = String::from_utf8(filename_bytes)
+            .map_err(|_err| String::from("Non-utf8 filename"))?;
+
+        Ok(IndexEntry {
+            metadata_change_time: (ctime as i64, ctime_nsec as i64),
+            data_change_time: (mtime as i64, mtime_nsec as i64),
+            device: dev as u64,
+            inode: ino as u64,
+            mode,
+            uid,
+            gid,
+            size: size as u64,
+            hash,
+
+            assume_valid: flags & 0x8000 != 0,
+            name_length: filename_length,
+            file_name: RepoRelativeFilename(file_name),
+        })
+    }
+
     pub fn new(filename: RepoRelativeFilename, hash: Hash, metadata: std::fs::Metadata) -> Self {
         IndexEntry {
             metadata_change_time: (metadata.ctime(), metadata.ctime_nsec()),
@@ -127,8 +229,6 @@ pub fn repo_canononicalize(filename: &str) -> crate::cli::ContextlessCliResult<R
 
     let canonical_filename = crate::io::canonicalize(&filename)?;
 
-    eprintln!("a: {canonical_filename:?} b: {repo_directory:?}");
-
     canonical_filename
         .strip_prefix(&repo_directory)
         .map_err(|err| format!("{err}"))
@@ -138,20 +238,4 @@ pub fn repo_canononicalize(filename: &str) -> crate::cli::ContextlessCliResult<R
             |err_str|
             Box::new(move |reason| format!("Failed to {}: error while reading file `{}`: {}", reason, filename, err_str))
         )
-
-    /*
-    std::path::Path::new(&filename).canonicalize()
-        .map_err(|io_err| io_err.to_string())
-        .and_then(|file_path|
-            file_path.strip_prefix(&mush_directory)
-                .map_err(|err| format!("{err}"))
-                .and_then(|path| path.to_str().ok_or(String::from("Failed to convert path to string")))
-                .map(|path_str| String::from(path_str))
-        )
-        .map_err::<Box<dyn FnOnce(&str) -> String>, _>(
-            |io_err|
-            Box::new(move |reason| format!("Failed to {}: error while reading file `{}`: {}", reason, filename, io_err))
-        )
-        .map(|str| RepoRelativeFilename(String::from(str)))
-    */
 }

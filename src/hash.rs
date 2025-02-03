@@ -15,6 +15,13 @@ impl Hash {
         }
     }
 
+    pub fn from_bytes(bytes: [u8; 20]) -> Self {
+        Hash {
+            bytes,
+            string: hex::encode(bytes),
+        }
+    }
+
     pub fn try_from_str(string: &str) -> Option<Self> {
         hex::decode(string).ok()
             .and_then(|byte_vec| {

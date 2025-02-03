@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use crate::{cli::{CliResult, ContextlessCliResult}, index::RepoRelativeFilename};
+use crate::{cli::{CliResult, ContextlessCliResult}, index::{Index, RepoRelativeFilename}};
 
 pub fn create_directory_no_overwrite(directory: &str) -> ContextlessCliResult<()> {
     match std::fs::create_dir(directory) {
@@ -113,6 +113,14 @@ pub fn open_filename(filename: &str) -> ContextlessCliResult<std::fs::File> {
         )
 }
 
+pub fn open_file(path: &std::path::Path) -> ContextlessCliResult<std::fs::File> {
+    let filename = String::from(path.to_str().unwrap_or("<unprintable-path>"));
+    std::fs::File::open(&path)
+        .map_err::<Box<dyn FnOnce(&str) -> String>, _>(|io_err|
+            Box::new(move |reason| format!("Failed to {}: error while opening file `{}`: {}", reason, filename, io_err))
+        )
+}
+
 pub fn read_filename_to_str(filename: &str) -> ContextlessCliResult<String> {
     read_file_to_str(open_filename(filename)?, filename)
 }
@@ -186,4 +194,21 @@ pub fn canonicalize(path: &str) -> ContextlessCliResult<std::path::PathBuf> {
             |io_err|
             Box::new(move |reason| format!("Failed to {}: error while canonicalizing filename `{}`: {}", reason, path, io_err))
         )
+}
+
+// Parse .mush/index, if it exists
+// Ok(None) means it doesn't exist
+pub fn read_index() -> ContextlessCliResult<Option<Index>> {
+    let index_filename = dot_mush_slash("index")?;
+    if !std::path::Path::new(&index_filename).exists() {
+        Ok(None)
+    } else {
+        let bytes = read_filename_to_bytes(&index_filename)?;
+
+        Index::deserialize(&bytes)
+            .map(|index| Some(index))
+            .map_err::<Box<dyn FnOnce(&str) -> String>, _>( |err_str|
+                Box::new(move |reason| format!("Failed to {}: error while reading .mush/index: {}", reason, err_str))
+            )
+    }
 }

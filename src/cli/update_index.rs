@@ -8,6 +8,7 @@ use crate::index::IndexEntry;
 use crate::io::create_file;
 use crate::io::dot_mush_slash;
 use crate::io::file_metadata;
+use crate::io::read_index;
 
 #[derive(clap::Args)]
 pub struct UpdateIndexArgs {
@@ -46,16 +47,12 @@ impl UpdateIndexActionArgs {
 
 impl MushSubcommand for UpdateIndexArgs {
     fn execute(&self) -> ExitType {
+        let index_file_name = cli_expect!(dot_mush_slash("index"), "resolve path");
+        let mut index = cli_expect!(read_index(), "update index")
+            .unwrap_or(Index::new()) ;
+
         match self.action.to_enum() {
             UpdateIndexAction::Add(hash) => {
-                let index_file_name = cli_expect!(dot_mush_slash("index"), "resolve path");
-
-                let mut index = if std::path::Path::new(&index_file_name).exists() {
-                    todo!("read, deserialize index from file") // TODO also verify index checksum
-                } else {
-                    Index::new()
-                };
-
                 let metadata = cli_expect!(file_metadata(&self.file), "read file metadata");
                 let filename = cli_expect!(repo_canononicalize(&self.file), "canonicalize filename");
                 let hash = cli_expect!(
@@ -68,15 +65,21 @@ impl MushSubcommand for UpdateIndexArgs {
                     IndexEntry::new(filename, hash, metadata)
                 );
 
-                cli_expect!(
-                    create_file(&index_file_name, index.serialize().as_slice()),
-                    "write index"
-                );
             },
             UpdateIndexAction::Remove => {
-                todo!("implement remove")
+                let filename = cli_expect!(repo_canononicalize(&self.file), "canonicalize filename");
+
+                cli_expect!(
+                    index.entries().remove(&filename)
+                        .ok_or("No index entry for {filename}")
+                );
             }
         }
+
+        cli_expect!(
+            create_file(&index_file_name, index.serialize().as_slice()),
+            "write index"
+        );
 
         ExitType::Ok
     }
