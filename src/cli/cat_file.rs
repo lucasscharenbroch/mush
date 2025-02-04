@@ -1,10 +1,8 @@
 use crate::cli::ExitType;
 use crate::cli::MushSubcommand;
 use crate::cli_expect;
-use crate::io::open_filename;
-use crate::io::read_filename_to_bytes;
-use crate::io::dot_mush_slash;
-use crate::object::Object;
+use crate::io::read_object;
+use crate::io::read_object_header;
 use crate::revision::RevisionSpec;
 
 #[derive(clap::Args)]
@@ -61,10 +59,7 @@ impl MushSubcommand for CatFileArgs {
     fn execute(&self) -> ExitType {
         let revision_spec = crate::cli_expect!(RevisionSpec::parse(&self.object));
         let hash = crate::cli_expect!(revision_spec.dereference());
-        let object_filename = cli_expect!(dot_mush_slash(&hash.path()), "resolve path");
-        let file = cli_expect!(open_filename(&object_filename), "get object header");
-        let header =
-            crate::cli_expect!(crate::object::ObjectHeader::extract_from_file(file, &hash));
+        let header = cli_expect!(read_object_header(&hash));
 
         match self.variant.to_enum() {
             CatFileVariant::Type => {
@@ -75,13 +70,7 @@ impl MushSubcommand for CatFileArgs {
                 println!("{}", header.size);
             }
             CatFileVariant::PrettyPrint => {
-                let object_contents_str =
-                    cli_expect!(read_filename_to_bytes(&object_filename), "read object");
-                let pretty_output = cli_expect!(Object::from_compressed_bytes(
-                    &object_contents_str
-                )
-                .map_err(|msg| format!("Error while reading object `{object_filename}`: {msg}")));
-                print!("{pretty_output}");
+                print!("{}", cli_expect!(read_object(&hash)));
             }
         }
 

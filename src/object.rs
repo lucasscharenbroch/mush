@@ -62,7 +62,8 @@ impl TreeEntry {
             return Err(String::from("Malformed tree object"));
         }
 
-        let object_type = ObjectType::Blob; // TODO
+        let hash = Hash::from_bytes(hash.as_slice().try_into().unwrap());
+        let object_type = crate::io::read_object_header(&hash)?.tipe;
 
         Ok(TreeEntry {
             mode: String::from_utf8(mode)
@@ -73,7 +74,7 @@ impl TreeEntry {
                 String::from_utf8(filename)
                     .map_err(|_| String::from("Malformed index: bad filename"))?
             ),
-            hash: Hash::from_bytes(hash.as_slice().try_into().unwrap()),
+            hash,
             object_type,
         })
     }

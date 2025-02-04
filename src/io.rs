@@ -1,6 +1,9 @@
 use std::path::Path;
 
-use crate::{cli::{CliResult, ContextlessCliResult}, index::{Index, RepoRelativeFilename}};
+use crate::cli::{with_context, CliResult, ContextlessCliResult};
+use crate::index::{Index, RepoRelativeFilename};
+use crate::object::{Object, ObjectHeader};
+use crate::hash::Hash;
 
 pub fn create_directory_no_overwrite(directory: &str) -> ContextlessCliResult<()> {
     match std::fs::create_dir(directory) {
@@ -246,4 +249,24 @@ pub fn repo_canononicalize(filename: &str) -> crate::cli::ContextlessCliResult<R
             |err_str|
             Box::new(move |reason| format!("Failed to {}: error while reading file `{}`: {}", reason, filename, err_str))
         )
+}
+
+pub fn write_object(object: &Object) -> CliResult<()> {
+    let target_file = with_context("resole path", dot_mush_slash(&object.hash().path()))?;
+    with_context("write object", create_file_all(&target_file, object.compressed().as_slice()))
+}
+
+pub fn read_object_header(hash: &Hash) -> CliResult<ObjectHeader> {
+    let object_filename = with_context("resolve path", dot_mush_slash(&hash.path()))?;
+    let file = with_context("get object header", open_filename(&object_filename))?;
+    ObjectHeader::extract_from_file(file, &hash)
+}
+
+pub fn read_object(hash: &Hash) -> CliResult<Object<'static>> {
+    let object_filename = with_context("resolve path", dot_mush_slash(&hash.path()))?;
+    let object_contents_str = with_context("read object", read_filename_to_bytes(&object_filename))?;
+    Object::from_compressed_bytes(
+        &object_contents_str
+    )
+        .map_err(|msg| format!("Error while reading object: {msg}"))
 }
