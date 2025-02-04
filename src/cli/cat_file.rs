@@ -70,7 +70,8 @@ impl MushSubcommand for CatFileArgs {
                 println!("{}", header.size);
             }
             CatFileVariant::PrettyPrint => {
-                print!("{}", cli_expect!(read_object(&hash)));
+                let object = cli_expect!(read_object(&hash));
+                print!("{}", cli_expect!(object.pretty_print()));
             }
         }
 

@@ -1,22 +1,26 @@
+use crate::{cli::CliResult, io::read_object_header};
+
 use super::Object;
 
-impl<'b> std::fmt::Display for Object<'b> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl<'b> Object<'b> {
+    /// Note that this is costly because it looks up object types from the mush database
+    pub fn pretty_print(&self) -> CliResult<String> {
         match self {
-            Self::Blob(bytes) => f.write_str(&String::from_utf8_lossy(bytes)),
-            Self::Tree(entries) => {
-                for entry in entries.iter() {
-                    f.write_str(&format!(
-                        "{:06} {} {}\t{}\n",
-                        entry.mode,
-                        entry.object_type.to_str(),
-                        entry.hash.as_str(),
-                        entry.filename,
-                    ))?;
-                }
+            Self::Blob(bytes) => Ok(String::from_utf8_lossy(bytes).to_string()),
+            Self::Tree(entries) =>
+                entries.iter()
+                    .map(|entry| {
+                        let object_type = read_object_header(&entry.hash)?.tipe;
 
-                Ok(())
-            }
+                        Ok(format!(
+                            "{:06} {} {}\t{}\n",
+                            entry.mode,
+                            object_type.to_str(),
+                            entry.hash.as_str(),
+                            entry.filename,
+                        ))
+                    })
+                    .collect::<CliResult<String>>()
         }
     }
 }

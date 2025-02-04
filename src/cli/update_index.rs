@@ -49,7 +49,7 @@ impl MushSubcommand for UpdateIndexArgs {
     fn execute(&self) -> ExitType {
         let index_file_name = cli_expect!(dot_mush_slash("index"), "resolve path");
         let mut index = cli_expect!(read_index(), "update index")
-            .unwrap_or(Index::new()) ;
+            .unwrap_or(Index::empty()) ;
 
         match self.action.to_enum() {
             UpdateIndexAction::Add(hash) => {

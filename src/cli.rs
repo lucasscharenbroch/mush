@@ -2,6 +2,7 @@ mod cat_file;
 mod hash_object;
 mod init;
 mod update_index;
+mod write_tree;
 
 use cat_file::CatFileArgs;
 use hash_object::HashObjectArgs;
@@ -9,6 +10,7 @@ use init::InitArgs;
 
 use clap::{Parser, Subcommand};
 use update_index::UpdateIndexArgs;
+use write_tree::WriteTreeArgs;
 use std::process::ExitCode;
 
 pub enum ExitType {
@@ -47,6 +49,8 @@ pub enum CliSubcommand {
     CatFile(CatFileArgs),
     /// Register file contents in the working tree to the index
     UpdateIndex(UpdateIndexArgs),
+    /// Create a tree object from the current index
+    WriteTree(WriteTreeArgs),
 }
 
 pub trait MushSubcommand {
@@ -62,6 +66,7 @@ impl std::ops::Deref for CliSubcommand {
             Self::HashObject(args) => args,
             Self::CatFile(args) => args,
             Self::UpdateIndex(args) => args,
+            Self::WriteTree(args) => args,
         }
     }
 }
@@ -69,7 +74,7 @@ impl std::ops::Deref for CliSubcommand {
 pub type CliResult<T> = Result<T, String>;
 pub type ContextlessCliResult<T> = Result<T, Box<dyn FnOnce(&str) -> String>>;
 
-fn with_context<T>(result: ContextlessCliResult<T>, context: &str) -> CliResult<T> {
+pub fn with_context<T>(context: &str, result: ContextlessCliResult<T>) -> CliResult<T> {
     result.map_err(|callback| callback(context))
 }
 

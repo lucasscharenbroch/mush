@@ -5,6 +5,7 @@
 use std::{collections::BTreeMap, os::unix::fs::MetadataExt};
 
 use crate::hash::Hash;
+use crate::object::TreeEntry;
 
 /// String newtype wrapper for a filename relative to the repo's base, no leading slash
 #[derive(PartialEq, Eq, PartialOrd, Ord, Clone)]
@@ -114,7 +115,7 @@ impl Index {
         })
     }
 
-    pub fn new() -> Self {
+    pub fn empty() -> Self {
         Index {
             entries: BTreeMap::new(),
         }
@@ -122,6 +123,10 @@ impl Index {
 
     pub fn entries(&mut self) -> &mut BTreeMap<RepoRelativeFilename, IndexEntry> {
         &mut self.entries
+    }
+
+    pub fn into_entries(self) -> BTreeMap<RepoRelativeFilename, IndexEntry> {
+        self.entries
     }
 }
 
@@ -223,5 +228,11 @@ impl IndexEntry {
             name_length: filename.len() as u16,
             file_name: filename,
         }
+    }
+}
+
+impl Into<TreeEntry> for IndexEntry {
+    fn into(self) -> TreeEntry {
+        TreeEntry::new(self.file_name, self.mode, self.hash)
     }
 }

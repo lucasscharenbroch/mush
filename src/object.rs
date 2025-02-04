@@ -1,8 +1,10 @@
 mod pretty_print;
 
-use crate::{cli::{CliResult, ContextlessCliResult}, hash::Hash, index::RepoRelativeFilename};
+use crate::cli::CliResult;
+use crate::hash::Hash;
+use crate::index::RepoRelativeFilename;
 
-use std::{borrow::Cow, collections::btree_map::Entry};
+use std::borrow::Cow;
 
 const COMPRESSION_LEVEL: u8 = 1;
 
@@ -38,10 +40,17 @@ pub struct TreeEntry {
     filename: RepoRelativeFilename,
     mode: u32,
     hash: Hash,
-    object_type: ObjectType,
 }
 
 impl TreeEntry {
+    pub fn new(filename: RepoRelativeFilename, mode: u32, hash: Hash) -> Self {
+        TreeEntry {
+            filename,
+            mode,
+            hash
+        }
+    }
+
     pub fn store(&self) -> Vec<u8> {
         [
             format!("{:06}", self.mode).as_bytes(),
@@ -62,9 +71,6 @@ impl TreeEntry {
             return Err(String::from("Malformed tree object"));
         }
 
-        let hash = Hash::from_bytes(hash.as_slice().try_into().unwrap());
-        let object_type = crate::io::read_object_header(&hash)?.tipe;
-
         Ok(TreeEntry {
             mode: String::from_utf8(mode)
                 .map_err(|_| ())
@@ -74,8 +80,7 @@ impl TreeEntry {
                 String::from_utf8(filename)
                     .map_err(|_| String::from("Malformed index: bad filename"))?
             ),
-            hash,
-            object_type,
+            hash: Hash::from_bytes(hash.as_slice().try_into().unwrap()),
         })
     }
 }

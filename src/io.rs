@@ -1,5 +1,3 @@
-use std::path::Path;
-
 use crate::cli::{with_context, CliResult, ContextlessCliResult};
 use crate::index::{Index, RepoRelativeFilename};
 use crate::object::{Object, ObjectHeader};
