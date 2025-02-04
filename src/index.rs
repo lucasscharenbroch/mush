@@ -8,7 +8,7 @@ use crate::hash::Hash;
 
 /// String newtype wrapper for a filename relative to the repo's base, no leading slash
 #[derive(PartialEq, Eq, PartialOrd, Ord, Clone)]
-pub struct RepoRelativeFilename(String);
+pub struct RepoRelativeFilename(pub String);
 
 impl std::ops::Deref for RepoRelativeFilename {
     type Target = String;
@@ -224,26 +224,4 @@ impl IndexEntry {
             file_name: filename,
         }
     }
-}
-
-// this conceptually belongs in the io module, but put here to keep
-// construction of `RepoRelativeFilename` private to this module
-/// Convert a filename to its canonical representation in the index
-/// (relative to the mush repository, without any leading slash)
-pub fn repo_canononicalize(filename: &str) -> crate::cli::ContextlessCliResult<RepoRelativeFilename> {
-    let filename = String::from(filename);
-    let repo_directory = crate::io::repo_folder()?;
-    let repo_directory = crate::io::canonicalize(&repo_directory)?;
-
-    let canonical_filename = crate::io::canonicalize_without_forcing_existance(&filename)?;
-
-    canonical_filename
-        .strip_prefix(&repo_directory)
-        .map_err(|err| format!("{err}"))
-        .and_then(|path| path.to_str().ok_or(String::from("Failed to convert path to string")))
-        .map(|path_str| RepoRelativeFilename(String::from(path_str)))
-        .map_err::<Box<dyn FnOnce(&str) -> String>, _>(
-            |err_str|
-            Box::new(move |reason| format!("Failed to {}: error while reading file `{}`: {}", reason, filename, err_str))
-        )
 }

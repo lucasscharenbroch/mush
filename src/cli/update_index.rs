@@ -2,7 +2,7 @@ use crate::cli::ExitType;
 use crate::cli::MushSubcommand;
 use crate::cli_expect;
 use crate::hash::Hash;
-use crate::index::repo_canononicalize;
+use crate::io::repo_canononicalize;
 use crate::index::Index;
 use crate::index::IndexEntry;
 use crate::io::create_file;

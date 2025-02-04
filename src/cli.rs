@@ -9,7 +9,7 @@ use init::InitArgs;
 
 use clap::{Parser, Subcommand};
 use update_index::UpdateIndexArgs;
-use std::process::{ExitCode, ExitStatus};
+use std::process::ExitCode;
 
 pub enum ExitType {
     Ok,

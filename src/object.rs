@@ -1,25 +1,28 @@
 mod pretty_print;
 
-use crate::{cli::CliResult, hash::Hash};
+use crate::{cli::{CliResult, ContextlessCliResult}, hash::Hash, index::RepoRelativeFilename};
 
-use std::borrow::Cow;
+use std::{borrow::Cow, collections::btree_map::Entry};
 
 const COMPRESSION_LEVEL: u8 = 1;
 
 pub enum ObjectType {
     Blob,
+    Tree,
 }
 
 impl ObjectType {
     pub fn to_str(&self) -> &str {
         match self {
             Self::Blob => "blob",
+            Self::Tree => "tree",
         }
     }
 
     fn from_string(string: &str) -> CliResult<Self> {
         match string {
             "blob" => Ok(Self::Blob),
+            "tree" => Ok(Self::Tree),
             _ => Err(format!("Bad object type: `{string}`")),
         }
     }
@@ -28,6 +31,52 @@ impl ObjectType {
 pub enum Object<'b> {
     Blob(Cow<'b, [u8]>), // `Cow<'b, [u8]>` allows both owned ([u8]) and borrowed (&'b [u8])
                          // under the same interface
+    Tree(Vec<TreeEntry>),
+}
+
+pub struct TreeEntry {
+    filename: RepoRelativeFilename,
+    mode: u32,
+    hash: Hash,
+    object_type: ObjectType,
+}
+
+impl TreeEntry {
+    pub fn store(&self) -> Vec<u8> {
+        [
+            format!("{:06}", self.mode).as_bytes(),
+            b" ",
+            self.filename.as_bytes(),
+            b"\0",
+            self.hash.as_bytes(),
+        ].concat()
+    }
+
+    fn unstore(bytes: &mut impl Iterator<Item = u8>) -> CliResult<Self> {
+        let mode = bytes.take(6).collect::<Vec<_>>();
+        let space = bytes.take(1).collect::<Vec<_>>();
+        let filename = bytes.take_while(|b| *b != b'\0').collect::<Vec<_>>();
+        let hash = bytes.take(20).collect::<Vec<_>>();
+
+        if mode.len() != 6 || space.len() != 1 || space[0] != b' ' || hash.len() != 20 {
+            return Err(String::from("Malformed tree object"));
+        }
+
+        let object_type = ObjectType::Blob; // TODO
+
+        Ok(TreeEntry {
+            mode: String::from_utf8(mode)
+                .map_err(|_| ())
+                .and_then(|s| s.parse::<u32>().map_err(|_| ()))
+                .map_err(|_| String::from("Malformed tree object: bad mode string"))?,
+            filename: RepoRelativeFilename(
+                String::from_utf8(filename)
+                    .map_err(|_| String::from("Malformed index: bad filename"))?
+            ),
+            hash: Hash::from_bytes(hash.as_slice().try_into().unwrap()),
+            object_type,
+        })
+    }
 }
 
 impl<'b> Object<'b> {
@@ -36,6 +85,26 @@ impl<'b> Object<'b> {
             Self::Blob(bytes) => {
                 let header = format!("blob {}", bytes.len());
                 [header.as_bytes(), &[b'\0'], bytes].concat()
+            },
+            Self::Tree(entries) => {
+                let net_entry_byte_size = entries.iter()
+                    .map(|entry|
+                        6 + // mode
+                        1 + // space
+                        entry.filename.len() +
+                        1 + // null-byte
+                        20 // hash
+                    )
+                    .sum::<usize>();
+                let header = format!("tree {}", net_entry_byte_size);
+
+                [
+                    header.as_bytes(),
+                    &[b'\0'],
+                    entries.iter().flat_map(|entry| entry.store())
+                        .collect::<Vec<_>>()
+                        .as_slice(),
+                ].concat()
             }
         }
     }
@@ -44,6 +113,16 @@ impl<'b> Object<'b> {
         fn decode_contents<'b>(tipe: ObjectType, contents: Vec<u8>) -> CliResult<Object<'b>> {
             match tipe {
                 ObjectType::Blob => Ok(Object::Blob(Cow::Owned(contents))),
+                ObjectType::Tree => {
+                    let mut contents_iterator = contents.iter().map(|b| *b).peekable();
+                    let mut entries = Vec::new();
+
+                    while contents_iterator.peek().is_some() {
+                        entries.push(TreeEntry::unstore(&mut contents_iterator)?);
+                    }
+
+                    Ok(Object::Tree(entries))
+                }
             }
         }
 

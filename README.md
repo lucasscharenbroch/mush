@@ -19,7 +19,7 @@ A minimalist git clone
 - [ ] write-tree
 - [ ] objects (creation, hashing, compression)
     - [X] blobs
-    - [ ] trees
+    - [X] trees
     - [ ] commits
 - [ ] refs
     - [ ] heads
