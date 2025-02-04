@@ -9,6 +9,7 @@ A minimalist git clone
 - `mush hash-object`
 - `mush cat-file`
 - `mush update-index`
+- `mush write-tree`
 
 ## To Do
 - [X] set up cli argparse
@@ -33,5 +34,4 @@ A minimalist git clone
 - [ ] diff
 - [ ] merge
 - [ ] (maybe)
-    - [ ] object packing
     - [ ] remotes
