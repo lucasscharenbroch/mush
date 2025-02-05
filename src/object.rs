@@ -1,4 +1,5 @@
 mod pretty_print;
+pub mod tree;
 
 use crate::cli::CliResult;
 use crate::hash::Hash;

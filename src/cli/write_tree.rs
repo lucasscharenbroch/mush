@@ -1,4 +1,7 @@
-use crate::{cli::{ExitType, MushSubcommand}, cli_expect, io::{read_index, write_object}, object::Object};
+use crate::cli::{ExitType, MushSubcommand};
+use crate::cli_expect;
+use crate::io::{read_index, write_object};
+use crate::object::tree::{FilenameTree, ObjectTree};
 
 #[derive(clap::Args)]
 pub struct WriteTreeArgs {
@@ -9,16 +12,11 @@ impl MushSubcommand for WriteTreeArgs {
         let index = cli_expect!(read_index(), "read index")
             .unwrap_or(crate::index::Index::empty());
 
-        let entries = index.into_entries()
-            .into_values()
-            .map(|entry| entry.into())
-            .collect::<Vec<_>>();
+        let object_tree = FilenameTree::from_index(index).objectify();
 
-        let tree_object = Object::Tree(entries);
+        cli_expect!(object_tree.write());
 
-        cli_expect!(write_object(&tree_object));
-
-        println!("{}", tree_object.hash().as_str());
+        println!("{}", object_tree.root().hash().as_str());
 
         ExitType::Ok
     }

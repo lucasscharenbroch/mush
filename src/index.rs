@@ -49,7 +49,7 @@ pub struct IndexEntry {
     // TODO merge stage
     name_length: u16, // [12], min(0xFFF, object_name.len())
 
-    file_name: RepoRelativeFilename, // [null-terminated string]
+    pub file_name: RepoRelativeFilename, // [null-terminated string]
 }
 
 impl Index {
