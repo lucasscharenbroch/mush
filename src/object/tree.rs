@@ -1,6 +1,10 @@
 use std::ffi::OsStr;
+use std::os::unix::fs::MetadataExt;
 
-use crate::{cli::CliResult, index::{Index, IndexEntry, RepoRelativeFilename}, io::write_object};
+use crate::cli::CliResult;
+use crate::index::{Index, IndexEntry, RepoRelativeFilename};
+use crate::io::write_object;
+use crate::object::TreeEntry;
 
 use itertools::Itertools;
 
@@ -49,7 +53,7 @@ pub struct FilenameTree {
 }
 
 pub enum FilenameTreeNode {
-    Leaf(RepoRelativeFilename),
+    Leaf(String),
     Node(String, Vec<FilenameTreeNode>),
 }
 
@@ -86,7 +90,7 @@ impl FilenameTree {
             // create blobs from entries with no parent directory.
             let blobs = directory_to_entries_map.remove(&None).unwrap_or(vec![])
                 .into_iter()
-                .map(|entry| FilenameTreeNode::Leaf(entry.file_name))
+                .map(|entry| FilenameTreeNode::Leaf(entry.file_name.into()))
                 .collect::<Vec<_>>();
 
             // create trees (recursively) with the rest.
@@ -108,10 +112,39 @@ impl FilenameTree {
         }
     }
 
-    // This is a bad function name for readability, and it doesn't really add any meaning but I like it.
-    // And, let's face it, nobody will be reading this code except me.
-    /// Convert to an `ObjectTree`
-    pub fn objectify(self) -> ObjectTree {
-        todo!()
+    pub fn into_object_tree(self) -> CliResult<ObjectTree> {
+        fn recursive_helper(nodes: Vec<FilenameTreeNode>, directory: &std::path::Path) -> CliResult<ObjectTree> {
+            let (tree_entries, object_trees) = nodes.into_iter().map(|node| {
+                match node {
+                    FilenameTreeNode::Leaf(filename) => {
+                        let full_filename = directory.join(&filename).to_str().unwrap().to_owned();
+                        let content = crate::cli::with_context("convert filename into object", crate::io::read_filename_to_str(&full_filename))?;
+                        let stat = crate::cli::with_context("convert filename into object", crate::io::file_metadata(&full_filename))?;
+                        let object = Object::Blob(std::borrow::Cow::Owned(content.into_bytes()));
+
+                        Ok((
+                            TreeEntry::new(filename, stat.mode(), object.hash()),
+                            ObjectTree::Leaf(object),
+                        ))
+                    },
+                    FilenameTreeNode::Node(dir, children) => {
+                        let subtree = recursive_helper(children, &directory.join(&dir))?;
+                        const DEFAULT_DIRECTORY_MODE: u32 = 0o40000;
+
+                        Ok((
+                            TreeEntry::new(dir, DEFAULT_DIRECTORY_MODE, subtree.root().hash()),
+                            subtree,
+                        ))
+                    }
+                }
+                })
+                .collect::<CliResult<Vec<(_, _)>>>()?
+                .into_iter()
+                .unzip();
+
+            Ok(ObjectTree::Node(Object::Tree(tree_entries), object_trees))
+        }
+
+        recursive_helper(self.nodes, std::path::Path::new(""))
     }
 }

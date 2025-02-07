@@ -19,6 +19,12 @@ impl std::ops::Deref for RepoRelativeFilename {
     }
 }
 
+impl Into<String> for RepoRelativeFilename {
+    fn into(self) -> String {
+        self.0
+    }
+}
+
 impl std::fmt::Display for RepoRelativeFilename {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(self)
@@ -233,6 +239,6 @@ impl IndexEntry {
 
 impl Into<TreeEntry> for IndexEntry {
     fn into(self) -> TreeEntry {
-        TreeEntry::new(self.file_name, self.mode, self.hash)
+        TreeEntry::new(self.file_name.into(), self.mode, self.hash)
     }
 }

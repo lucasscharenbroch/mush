@@ -3,7 +3,6 @@ pub mod tree;
 
 use crate::cli::CliResult;
 use crate::hash::Hash;
-use crate::index::RepoRelativeFilename;
 
 use std::borrow::Cow;
 
@@ -38,13 +37,13 @@ pub enum Object<'b> {
 }
 
 pub struct TreeEntry {
-    filename: RepoRelativeFilename,
+    filename: String,
     mode: u32,
     hash: Hash,
 }
 
 impl TreeEntry {
-    pub fn new(filename: RepoRelativeFilename, mode: u32, hash: Hash) -> Self {
+    pub fn new(filename: String, mode: u32, hash: Hash) -> Self {
         TreeEntry {
             filename,
             mode,
@@ -54,7 +53,7 @@ impl TreeEntry {
 
     pub fn store(&self) -> Vec<u8> {
         [
-            format!("{:06}", self.mode).as_bytes(),
+            format!("{:o}", self.mode).as_bytes(),
             b" ",
             self.filename.as_bytes(),
             b"\0",
@@ -77,10 +76,8 @@ impl TreeEntry {
                 .map_err(|_| ())
                 .and_then(|s| s.parse::<u32>().map_err(|_| ()))
                 .map_err(|_| String::from("Malformed tree object: bad mode string"))?,
-            filename: RepoRelativeFilename(
-                String::from_utf8(filename)
-                    .map_err(|_| String::from("Malformed index: bad filename"))?
-            ),
+            filename: String::from_utf8(filename)
+                    .map_err(|_| String::from("Malformed index: bad filename"))?,
             hash: Hash::from_bytes(hash.as_slice().try_into().unwrap()),
         })
     }
@@ -96,7 +93,7 @@ impl<'b> Object<'b> {
             Self::Tree(entries) => {
                 let net_entry_byte_size = entries.iter()
                     .map(|entry|
-                        6 + // mode
+                        format!("{:o}", entry.mode).len() + // mode
                         1 + // space
                         entry.filename.len() +
                         1 + // null-byte

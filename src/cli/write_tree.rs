@@ -12,7 +12,7 @@ impl MushSubcommand for WriteTreeArgs {
         let index = cli_expect!(read_index(), "read index")
             .unwrap_or(crate::index::Index::empty());
 
-        let object_tree = FilenameTree::from_index(index).objectify();
+        let object_tree = cli_expect!(FilenameTree::from_index(index).into_object_tree());
 
         cli_expect!(object_tree.write());
 
