@@ -4,6 +4,8 @@
 
 A minimalist git clone
 
+The basic plumbing is almost identical to that of `git`, modulo several incompatible differences (some of these are labeled with `//<` in the code).
+
 ## Subcommands
 - `mush init`
 - `mush hash-object`

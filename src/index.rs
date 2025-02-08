@@ -155,8 +155,8 @@ impl IndexEntry {
                 ((if self.assume_valid { 1 } else { 0 }) << 15)
                 // TODO merge stage?
             ).to_be_bytes(),
-            // git adds extra null bytes to pad this to a multiple of 8 bytes.
-            // we won't do that.
+            //< git adds extra null bytes to pad this to a multiple of 8 bytes.
+            //< we won't do that.
             self.file_name.as_bytes(), &b"\0"[..],
         ].concat()
     }
