@@ -1,7 +1,7 @@
 use crate::cli::{ExitType, MushSubcommand};
 use crate::cli_expect;
-use crate::io::{read_index, write_object};
-use crate::object::tree::{FilenameTree, ObjectTree};
+use crate::io::read_index;
+use crate::object::tree::FilenameTree;
 
 #[derive(clap::Args)]
 pub struct WriteTreeArgs {

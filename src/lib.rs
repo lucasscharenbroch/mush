@@ -6,6 +6,7 @@ mod object;
 mod refs;
 mod revision; // plural to avoid name collision with `ref` keyword
 mod index;
+mod config;
 pub mod hash;
 pub mod cli;
 

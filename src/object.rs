@@ -1,6 +1,6 @@
 mod pretty_print;
 pub mod tree;
-mod commit;
+pub mod commit;
 
 use commit::CommitObject;
 
@@ -11,6 +11,7 @@ use std::borrow::Cow;
 
 const COMPRESSION_LEVEL: u8 = 1;
 
+#[derive(PartialEq)]
 pub enum ObjectType {
     Blob,
     Tree,

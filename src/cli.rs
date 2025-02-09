@@ -3,8 +3,10 @@ mod hash_object;
 mod init;
 mod update_index;
 mod write_tree;
+mod commit_tree;
 
 use cat_file::CatFileArgs;
+use commit_tree::CommitTreeArgs;
 use hash_object::HashObjectArgs;
 use init::InitArgs;
 
@@ -51,6 +53,8 @@ pub enum CliSubcommand {
     UpdateIndex(UpdateIndexArgs),
     /// Create a tree object from the current index
     WriteTree(WriteTreeArgs),
+    /// Create a new commit object
+    CommitTree(CommitTreeArgs),
 }
 
 pub trait MushSubcommand {
@@ -67,6 +71,7 @@ impl std::ops::Deref for CliSubcommand {
             Self::CatFile(args) => args,
             Self::UpdateIndex(args) => args,
             Self::WriteTree(args) => args,
+            Self::CommitTree(args) => args,
         }
     }
 }
@@ -79,12 +84,19 @@ pub fn with_context<T>(context: &str, result: ContextlessCliResult<T>) -> CliRes
 }
 
 #[macro_export]
+macro_rules! cli_panic {
+    ($message:expr /* CliResult<T> */) => { /* -> ExitType? */
+        eprintln!("{}", $message);
+        return ExitType::Fatal;
+    }
+}
+
+#[macro_export]
 macro_rules! cli_expect {
     ($result:expr /* CliResult<T> */) => { /* -> ExitType? */
         match $result {
             Err(message) => {
-                eprintln!("{}", message);
-                return ExitType::Fatal;
+                crate::cli_panic!(message);
             }
             Ok(x) => x,
         }

@@ -130,12 +130,18 @@ pub fn read_filename_to_bytes(filename: &str) -> ContextlessCliResult<Vec<u8>> {
     read_file_to_bytes(&mut open_filename(filename)?, filename)
 }
 
+pub fn read_stdin_to_str() -> ContextlessCliResult<String> {
+    std::io::read_to_string(std::io::stdin())
+        .map_err::<Box<dyn FnOnce(&str) -> String>, _>(|io_err|
+            Box::new(move |reason| format!("Failed to {}: error while reading stdin: {}", reason, io_err))
+        )
+}
+
 pub fn read_filename_or_stdin_to_str(filename: &str) -> ContextlessCliResult<String> {
     if filename == "-" { // stdin
-        let filename = String::from(filename);
         std::io::read_to_string(std::io::stdin())
             .map_err::<Box<dyn FnOnce(&str) -> String>, _>(|io_err|
-                Box::new(move |reason| format!("Failed to {}: error while reading stdin `{}`: {}", reason, filename, io_err))
+                Box::new(move |reason| format!("Failed to {}: error while reading stdin: {}", reason, io_err))
             )
     } else { // normal filename
         read_filename_to_str(filename)

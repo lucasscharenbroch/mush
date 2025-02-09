@@ -12,6 +12,7 @@ The basic plumbing is almost identical to that of `git`, modulo several incompat
 - `mush cat-file`
 - `mush update-index`
 - `mush write-tree`
+- `mush commit-tree`
 
 ## To Do
 - [X] set up cli argparse
@@ -20,7 +21,7 @@ The basic plumbing is almost identical to that of `git`, modulo several incompat
 - [X] cat-file
 - [X] update-index
 - [X] write-tree
-- [ ] commit-tree
+- [X] commit-tree
 - [X] objects (creation, hashing, compression)
     - [X] blobs
     - [X] trees

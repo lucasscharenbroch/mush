@@ -1,19 +1,21 @@
 use std::str::FromStr;
 
-use chrono::{FixedOffset, TimeZone};
+use chrono::TimeZone;
 use itertools::Itertools;
 
-use crate::{cli::CliResult, hash::Hash};
+use crate::{cli::CliResult, config::User, hash::Hash};
+
+use super::Object;
 
 const DATE_FORMAT_STRING: &'static str = "%s %:z";
 
-struct Person {
+struct PersonTime {
     name: String,
     email: String,
     timestamp: chrono::DateTime<chrono::FixedOffset>,
 }
 
-impl Person {
+impl PersonTime {
     fn to_string(&self) -> String {
         format!("{} <{}> {}", self.name, self.email, self.timestamp.format(DATE_FORMAT_STRING))
     }
@@ -22,7 +24,7 @@ impl Person {
 pub struct CommitObject {
     tree_hash: crate::hash::Hash,
     parent_hashes: Vec<crate::hash::Hash>,
-    author: Person,
+    author: PersonTime,
     //< git also has committer
     message: String,
 }
@@ -32,12 +34,12 @@ impl CommitObject {
         [
             format!("tree {}\n", self.tree_hash.to_string()),
             self.parent_hashes.iter()
-                .map(|hash| format!("parent {}", hash.to_string()))
-                .join("\n"),
+                .map(|hash| format!("parent {}\n", hash.to_string()))
+                .collect(),
             format!("author {}\n", self.author.to_string()),
             String::from("\n"),
             self.message.clone(),
-        ].join("\n")
+        ].join("")
     }
 
     pub fn from_string(string: &str) -> CliResult<Self> {
@@ -116,12 +118,11 @@ impl CommitObject {
             let offset = chrono::FixedOffset::from_str(offset)
                 .map_err(|_| String::from("Malformed commit object: bad timestamp"))?;
 
-            let author = Person {
+            let author = PersonTime {
                 name: String::from(name),
                 email: String::from(email),
                 timestamp: offset.timestamp_opt(seconds, 0).single()
                     .ok_or(String::from("Malformed commit object: bad timestamp"))?,
-                //chrono::DateTime::from_naive_utc_and_offset(chrono::DateTime::from_timestamp(seconds, 0), offset),
             };
 
             Ok(CommitObject {
@@ -137,5 +138,26 @@ impl CommitObject {
         } else {
             Err(String::from("Malformed commit object: no double newline found"))
         }
+    }
+
+    /// Assumes that all supplied hashes are valid.
+    /// (they will be place into the database without being checked)
+    pub fn new(tree_hash: Hash, parent_hashes: Vec<Hash>, user: User, message: String) -> Self {
+        CommitObject {
+            tree_hash,
+            parent_hashes,
+            author: PersonTime {
+                name: user.name,
+                email: user.email,
+                timestamp: chrono::Local::now().into(),
+            },
+            message
+        }
+    }
+}
+
+impl Into<Object<'static>> for CommitObject {
+    fn into(self) -> Object<'static> {
+        Object::Commit(self)
     }
 }
