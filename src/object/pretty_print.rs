@@ -4,6 +4,7 @@ use super::Object;
 
 impl<'b> Object<'b> {
     /// Note that this is costly because it looks up object types from the mush database
+    /// (for tree objects)
     pub fn pretty_print(&self) -> CliResult<String> {
         match self {
             Self::Blob(bytes) => Ok(String::from_utf8_lossy(bytes).to_string()),
@@ -20,7 +21,8 @@ impl<'b> Object<'b> {
                             entry.filename,
                         ))
                     })
-                    .collect::<CliResult<String>>()
+                    .collect::<CliResult<String>>(),
+            Self::Commit(commit_object) => Ok(commit_object.to_string()),
         }
     }
 }

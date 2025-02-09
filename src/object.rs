@@ -1,5 +1,8 @@
 mod pretty_print;
 pub mod tree;
+mod commit;
+
+use commit::CommitObject;
 
 use crate::cli::CliResult;
 use crate::hash::Hash;
@@ -11,6 +14,7 @@ const COMPRESSION_LEVEL: u8 = 1;
 pub enum ObjectType {
     Blob,
     Tree,
+    Commit,
 }
 
 impl ObjectType {
@@ -18,6 +22,7 @@ impl ObjectType {
         match self {
             Self::Blob => "blob",
             Self::Tree => "tree",
+            Self::Commit => "commit",
         }
     }
 
@@ -25,6 +30,7 @@ impl ObjectType {
         match string {
             "blob" => Ok(Self::Blob),
             "tree" => Ok(Self::Tree),
+            "commit" => Ok(Self::Commit),
             _ => Err(format!("Bad object type: `{string}`")),
         }
     }
@@ -34,6 +40,7 @@ pub enum Object<'b> {
     Blob(Cow<'b, [u8]>), // `Cow<'b, [u8]>` allows both owned ([u8]) and borrowed (&'b [u8])
                          // under the same interface
     Tree(Vec<TreeEntry>),
+    Commit(CommitObject),
 }
 
 pub struct TreeEntry {
@@ -109,7 +116,8 @@ impl<'b> Object<'b> {
                         .collect::<Vec<_>>()
                         .as_slice(),
                 ].concat()
-            }
+            },
+            Self::Commit(commit_object) => commit_object.to_string().as_bytes().to_vec()
         }
     }
 
@@ -126,6 +134,9 @@ impl<'b> Object<'b> {
                     }
 
                     Ok(Object::Tree(entries))
+                },
+                ObjectType::Commit => {
+                    Ok(Object::Commit(CommitObject::from_string(&String::from_utf8_lossy(&contents))?))
                 }
             }
         }

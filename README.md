@@ -20,10 +20,11 @@ The basic plumbing is almost identical to that of `git`, modulo several incompat
 - [X] cat-file
 - [X] update-index
 - [X] write-tree
-- [ ] objects (creation, hashing, compression)
+- [ ] commit-tree
+- [X] objects (creation, hashing, compression)
     - [X] blobs
     - [X] trees
-    - [ ] commits
+    - [X] commits
 - [ ] refs
     - [ ] heads
     - [ ] tags
@@ -37,3 +38,4 @@ The basic plumbing is almost identical to that of `git`, modulo several incompat
 - [ ] merge
 - [ ] (maybe)
     - [ ] remotes
+    - [ ] blame
