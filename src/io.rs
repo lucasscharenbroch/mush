@@ -114,12 +114,35 @@ pub fn open_filename(filename: &str) -> ContextlessCliResult<std::fs::File> {
         )
 }
 
+pub fn try_open_filename(filename: &str) -> ContextlessCliResult<Option<std::fs::File>> {
+    let filename = String::from(filename);
+
+    if !std::path::Path::new(&filename).exists() {
+        return Ok(None);
+    }
+
+    std::fs::File::open(&filename)
+        .map(|file| Some(file))
+        .map_err::<Box<dyn FnOnce(&str) -> String>, _>(|io_err|
+            Box::new(move |reason| format!("Failed to {}: error while opening file `{}`: {}", reason, filename, io_err))
+        )
+}
+
 pub fn open_file(path: &std::path::Path) -> ContextlessCliResult<std::fs::File> {
     let filename = String::from(path.to_str().unwrap_or("<unprintable-path>"));
     std::fs::File::open(&path)
         .map_err::<Box<dyn FnOnce(&str) -> String>, _>(|io_err|
             Box::new(move |reason| format!("Failed to {}: error while opening file `{}`: {}", reason, filename, io_err))
         )
+}
+
+pub fn try_read_filename_to_str(filename: &str) -> ContextlessCliResult<Option<String>> {
+    let file_opt = try_open_filename(filename)?;
+
+    match file_opt {
+        None => Ok(None),
+        Some(file) => read_file_to_str(file, filename).map(|s| Some(s))
+    }
 }
 
 pub fn read_filename_to_str(filename: &str) -> ContextlessCliResult<String> {
