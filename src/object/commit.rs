@@ -17,7 +17,11 @@ struct PersonTime {
 
 impl PersonTime {
     fn to_string(&self) -> String {
-        format!("{} <{}> {}", self.name, self.email, self.timestamp.format(DATE_FORMAT_STRING))
+        //< Use tab as separator to prevent parsing issues with spaces
+        //< in name causing ambiguity.
+        //< This means that tabs are invalid characters in user names/emails.
+        //< This isn't validated right now. Oh well.
+        format!("{}\t<{}>\t{}", self.name, self.email, self.timestamp.format(DATE_FORMAT_STRING))
     }
 }
 
@@ -32,11 +36,11 @@ pub struct CommitObject {
 impl CommitObject {
     pub fn to_string(&self) -> String {
         [
-            format!("tree {}\n", self.tree_hash.to_string()),
+            format!("tree\t{}\n", self.tree_hash.to_string()),
             self.parent_hashes.iter()
-                .map(|hash| format!("parent {}\n", hash.to_string()))
+                .map(|hash| format!("parent\t{}\n", hash.to_string()))
                 .collect(),
-            format!("author {}\n", self.author.to_string()),
+            format!("author\t{}\n", self.author.to_string()),
             String::from("\n"),
             self.message.clone(),
         ].join("")
@@ -46,8 +50,8 @@ impl CommitObject {
         fn from_header_and_message(header: &str, message: &str) -> CliResult<CommitObject>{
             let field_names_to_args_map = header.split("\n")
                 .map(|field| {
-                    let mut space_separated_strings = field.split(" ");
-                    (space_separated_strings.next(), space_separated_strings.collect::<Vec<_>>())
+                    let mut tab_separated_strings = field.split("\t");
+                    (tab_separated_strings.next(), tab_separated_strings.collect::<Vec<_>>())
                 })
                 .into_group_map();
 
@@ -55,7 +59,7 @@ impl CommitObject {
                 // (field_name, num_args, required, allow_duplicates)
                 ("tree", 1, true, false),
                 ("parent", 1, false, true),
-                ("author", 4, false, true),
+                ("author", 3, false, true),
             ];
 
             // verify that all fields match a spec (including num args and duplicates)
@@ -88,28 +92,31 @@ impl CommitObject {
                 .ok_or("Malformed commit object: missing tree")?
                 [0];
 
-            let tree_hash = Hash::from_bytes(
-                tree_hash_str.as_bytes().try_into()
-                    .map_err(|_| format!("Malformed commit object: bad hash: {}", tree_hash_str))?
-            );
+            let tree_hash = Hash::try_from_str(tree_hash_str)
+                .ok_or(format!("Malformed commit object: bad hash: {}", tree_hash_str))?;
 
             let parent_hashes = field_names_to_args_map.get(&Some("parent"))
                 .unwrap_or(&Vec::new())
                 .iter()
                 .map(|args| args[0])
-                .map(|hash_str| Ok::<_, String>(Hash::from_bytes(
-                    hash_str.as_bytes().try_into()
-                        .map_err(|_| format!("Malformed commit object: bad hash: {}", tree_hash_str))?
-                )))
+                .map(|hash_str| Ok::<_, String>(
+                    Hash::try_from_str(hash_str)
+                        .ok_or(format!("Malformed commit object: bad hash: {}", tree_hash_str))?
+                ))
                 .collect::<Result<Vec<_>, _>>()?;
 
-            let [name, email, seconds, offset] = field_names_to_args_map.get(&Some("author"))
+            let [name, email, time] = field_names_to_args_map.get(&Some("author"))
                 .unwrap_or(&Vec::new())
                 .get(0)
                 .ok_or("Malformed commit object: missing author")?
-                [0..4]
+                [0..3]
                 else {
                     panic!("Violated arity invariant")
+                };
+
+            let [seconds, offset] = time.split(" ").collect::<Vec<_>>()[0..2]
+                else {
+                    return Err(String::from("Malformed commit object: bad timestamp"))
                 };
 
             let seconds = seconds.parse::<i64>()
