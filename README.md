@@ -13,6 +13,7 @@ The basic plumbing is almost identical to that of `git`, modulo several incompat
 - `mush update-index`
 - `mush write-tree`
 - `mush commit-tree`
+- `mush config`
 
 ## To Do
 - [X] set up cli argparse

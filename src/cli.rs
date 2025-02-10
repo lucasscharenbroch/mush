@@ -4,9 +4,11 @@ mod init;
 mod update_index;
 mod write_tree;
 mod commit_tree;
+mod config;
 
 use cat_file::CatFileArgs;
 use commit_tree::CommitTreeArgs;
+use config::ConfigArgs;
 use hash_object::HashObjectArgs;
 use init::InitArgs;
 
@@ -55,6 +57,8 @@ pub enum CliSubcommand {
     WriteTree(WriteTreeArgs),
     /// Create a new commit object
     CommitTree(CommitTreeArgs),
+    /// Get and set repository options
+    Config(ConfigArgs),
 }
 
 pub trait MushSubcommand {
@@ -72,6 +76,7 @@ impl std::ops::Deref for CliSubcommand {
             Self::UpdateIndex(args) => args,
             Self::WriteTree(args) => args,
             Self::CommitTree(args) => args,
+            Self::Config(args) => args,
         }
     }
 }

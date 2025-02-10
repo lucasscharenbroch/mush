@@ -1,6 +1,6 @@
 use itertools::Itertools;
 
-use crate::{cli::{with_context, CliResult, ContextlessCliResult}, io::{dot_mush_slash, read_filename_to_str, try_read_filename_to_str}};
+use crate::{cli::{with_context, CliResult, ContextlessCliResult}, io::{create_file_all, dot_mush_slash, overwrite_file, read_filename_to_str, try_open_filename, try_read_filename_to_str}};
 
 pub struct User {
     pub name: String,
@@ -27,26 +27,41 @@ struct MushConfig {
     user: PartialUser,
 }
 
+//< Use a filesystem-based, per-repository (non-global) config.
+//< Writing a global config would be nicer for actual use,
+//< but it would be a hairier (though not much more interesting)
+//< implementation, plus making testing much more tedious.
+pub fn read_config_option(option_name: &str) -> ContextlessCliResult<Option<String>> {
+    let target_file = dot_mush_slash(
+        &format!("config/{}", option_name.split(".").join("/"))
+    )?;
+
+    try_read_filename_to_str(&target_file)
+}
+
+pub fn write_config_option(option_name: &str, value: &str) -> ContextlessCliResult<()> {
+    let target_file = dot_mush_slash(
+        &format!("config/{}", option_name.split(".").join("/"))
+    )?;
+
+    let file_opt = try_open_filename(&target_file)?;
+
+    if let Some(file) = file_opt {
+        overwrite_file(file, &target_file, value.as_bytes())?;
+    } else {
+        create_file_all(&target_file, value.as_bytes())?;
+    }
+
+    Ok(())
+}
+
 impl MushConfig {
     fn _read() -> ContextlessCliResult<MushConfig> {
-        //< Use a filesystem-based, per-repository (non-global) config.
-        //< Writing a global config would be nicer for actual use,
-        //< but it would be a hairier (though not much more interesting)
-        //< implementation, plus making testing much more tedious.
-
-        fn read_field(field_name: &str) -> ContextlessCliResult<Option<String>> {
-            let target_file = dot_mush_slash(
-                &format!("config/{}", field_name.split(".").join("/"))
-            )?;
-
-            try_read_filename_to_str(&target_file)
-        }
-
         Ok(
             MushConfig {
                 user: PartialUser {
-                    name: read_field("user.name")?,
-                    email: read_field("user.email")?,
+                    name: read_config_option("user.name")?,
+                    email: read_config_option("user.email")?,
                 }
             }
         )
@@ -61,5 +76,13 @@ pub fn force_get_user() -> CliResult<User> {
     let config = MushConfig::read()?;
 
     config.user.try_into_user()
-        .ok_or(String::from("User config incomplete. Please specify name and email."))
+        .ok_or(String::from(
+            concat!(
+                "User config incomplete.\n",
+                "Please specify name and email.\n",
+                "E.G.:\n",
+                "mush config user.name 'James Smith'\n",
+                "mush config user.email 'james@smith.com'"
+            )
+        ))
 }

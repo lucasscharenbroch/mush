@@ -78,6 +78,16 @@ pub fn create_file(filename: &str, contents: &[u8]) -> ContextlessCliResult<()> 
     })
 }
 
+pub fn overwrite_file(mut file: std::fs::File, filename_for_debug: &str, contents: &[u8]) -> ContextlessCliResult<()> {
+    std::io::Write::write_all(&mut file, contents)
+    .map_err::<Box<dyn FnOnce(&str) -> String>, _>(|io_err| {
+        let filename = String::from(filename_for_debug);
+        Box::new(move |reason: &str|
+            format!("Failed to {}: error while creating file `{}`: {}", reason, filename, io_err)
+        )
+    })
+}
+
 pub fn create_file_all(filename: &str, contents: &[u8]) -> ContextlessCliResult<()> {
     let path = std::path::Path::new(filename);
     let directory = path.parent().unwrap_or(std::path::Path::new("."));

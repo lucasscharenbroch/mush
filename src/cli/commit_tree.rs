@@ -3,7 +3,7 @@ use crate::cli_expect;
 use crate::config::force_get_user;
 use crate::io::{read_object_header, read_stdin_to_str, write_object};
 use crate::object::commit::CommitObject;
-use crate::object::{Object, ObjectType};
+use crate::object::ObjectType;
 use crate::revision::RevisionSpec;
 
 #[derive(clap::Args)]
