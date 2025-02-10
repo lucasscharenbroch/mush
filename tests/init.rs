@@ -8,10 +8,10 @@ fn assert_dir_is_proper_clean_repo(repo_dir: &std::path::Path) {
         ".mush",
         ".mush/objects",
         ".mush/refs",
+        ".mush/config",
     ];
 
     const EXPECTED_FILES: &[&'static str] = &[
-        ".mush/config",
         ".mush/HEAD",
     ];
 

@@ -1,6 +1,6 @@
 use itertools::Itertools;
 
-use crate::{cli::{with_context, CliResult, ContextlessCliResult}, io::{create_file_all, dot_mush_slash, overwrite_file, read_filename_to_str, try_open_filename, try_read_filename_to_str}};
+use crate::{cli::{with_context, CliResult, ContextlessCliResult}, io::{create_file_all, dot_mush_slash, file_exists, overwrite_file, read_filename_to_str, try_open_filename, try_read_filename_to_str}};
 
 pub struct User {
     pub name: String,
@@ -44,10 +44,8 @@ pub fn write_config_option(option_name: &str, value: &str) -> ContextlessCliResu
         &format!("config/{}", option_name.split(".").join("/"))
     )?;
 
-    let file_opt = try_open_filename(&target_file)?;
-
-    if let Some(file) = file_opt {
-        overwrite_file(file, &target_file, value.as_bytes())?;
+    if file_exists(&target_file) {
+        overwrite_file(&target_file, value.as_bytes())?;
     } else {
         create_file_all(&target_file, value.as_bytes())?;
     }

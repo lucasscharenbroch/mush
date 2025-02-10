@@ -11,7 +11,6 @@ pub struct InitArgs {
 impl MushSubcommand for InitArgs {
     fn execute(&self) -> ExitType {
         const REASON: &'static str = "initialize repo";
-        const DEFAULT_CONFIG: &'static str = "[[default-config-placeholder]]";
         const DEFAULT_HEAD: &'static str = "[[default-head-placeholder]]";
 
         let directory = match self.directory {
@@ -31,12 +30,12 @@ impl MushSubcommand for InitArgs {
                     format!("{directory}/.mush").as_str(),
                     format!("{directory}/.mush/objects").as_str(),
                     format!("{directory}/.mush/refs").as_str(),
+                    format!("{directory}/.mush/config").as_str(),
                 ].iter()
             ),
             REASON
         );
 
-        crate::cli_expect!(create_file_no_overwrite(&format!("{directory}/.mush/config"), DEFAULT_CONFIG.as_bytes()), REASON);
         crate::cli_expect!(create_file_no_overwrite(&format!("{directory}/.mush/HEAD"), DEFAULT_HEAD.as_bytes()), REASON);
 
         ExitType::Ok

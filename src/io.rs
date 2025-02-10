@@ -38,6 +38,20 @@ pub fn create_directory_all(directory: &str) -> ContextlessCliResult<()> {
     }
 }
 
+pub fn create_directory_all_idempotent(directory: &str) -> ContextlessCliResult<()> {
+    match std::fs::create_dir_all(directory) {
+        Err(io_err) => {
+            if let std::io::ErrorKind::AlreadyExists = io_err.kind() {
+                Ok(())
+            } else {
+                let directory = String::from(directory);
+                Err(Box::new(move |reason| format!("Failed to {}: error while creating directory `{}`: {}", reason, directory, io_err)))
+            }
+        },
+        _ => Ok(()),
+    }
+}
+
 pub fn create_file_no_overwrite(filename: &str, contents: &[u8]) -> ContextlessCliResult<()> {
     match std::fs::File::create_new(filename) {
         Err(io_err) if matches!(io_err.kind(), std::io::ErrorKind::AlreadyExists) => {
@@ -60,39 +74,46 @@ pub fn create_file_all_no_overwrite(filename: &str, contents: &[u8]) -> Contextl
     let path = std::path::Path::new(filename);
     let directory = path.parent().unwrap_or(std::path::Path::new("."));
 
-    create_directory_all(directory.to_str().unwrap())?;
+    create_directory_all_idempotent(directory.to_str().unwrap())?;
     create_file_no_overwrite(path.to_str().unwrap(), contents)?;
     Ok(())
 }
 
 pub fn create_file(filename: &str, contents: &[u8]) -> ContextlessCliResult<()> {
     std::fs::File::create(filename)
-    .and_then(|mut file| {
-        std::io::Write::write_all(&mut file, contents)
-    })
-    .map_err::<Box<dyn FnOnce(&str) -> String>, _>(|io_err| {
-        let filename = String::from(filename);
-        Box::new(move |reason: &str|
-            format!("Failed to {}: error while creating file `{}`: {}", reason, filename, io_err)
-        )
-    })
+        .and_then(|mut file| {
+            std::io::Write::write_all(&mut file, contents)
+        })
+        .map_err::<Box<dyn FnOnce(&str) -> String>, _>(|io_err| {
+            let filename = String::from(filename);
+            Box::new(move |reason: &str|
+                format!("Failed to {}: error while creating file `{}`: {}", reason, filename, io_err)
+            )
+        })
 }
 
-pub fn overwrite_file(mut file: std::fs::File, filename_for_debug: &str, contents: &[u8]) -> ContextlessCliResult<()> {
-    std::io::Write::write_all(&mut file, contents)
-    .map_err::<Box<dyn FnOnce(&str) -> String>, _>(|io_err| {
-        let filename = String::from(filename_for_debug);
-        Box::new(move |reason: &str|
-            format!("Failed to {}: error while creating file `{}`: {}", reason, filename, io_err)
-        )
-    })
+pub fn overwrite_file(filename: &str, contents: &[u8]) -> ContextlessCliResult<()> {
+    std::fs::OpenOptions::new()
+        .write(true)
+        .create(false)
+        .truncate(true)
+        .open(filename)
+        .and_then(|mut file| {
+            std::io::Write::write_all(&mut file, contents)
+        })
+        .map_err::<Box<dyn FnOnce(&str) -> String>, _>(|io_err| {
+            let filename = String::from(filename);
+            Box::new(move |reason: &str|
+                format!("Failed to {}: error while overwriting file `{}`: {}", reason, filename, io_err)
+            )
+        })
 }
 
 pub fn create_file_all(filename: &str, contents: &[u8]) -> ContextlessCliResult<()> {
     let path = std::path::Path::new(filename);
     let directory = path.parent().unwrap_or(std::path::Path::new("."));
 
-    create_directory_all(directory.to_str().unwrap())?;
+    create_directory_all_idempotent(directory.to_str().unwrap())?;
     create_file(path.to_str().unwrap(), contents)?;
     Ok(())
 }
@@ -187,6 +208,10 @@ pub fn file_metadata(filename: &str) -> ContextlessCliResult<std::fs::Metadata> 
         .map_err::<Box<dyn FnOnce(&str) -> String>, _>(|io_err|
             Box::new(move |reason| format!("Failed to {}: error while fetching metadata of file `{}`: {}", reason, filename, io_err))
         )
+}
+
+pub fn file_exists(filename: &str) -> bool {
+    std::path::Path::new(&filename).exists()
 }
 
 pub fn repo_folder() -> ContextlessCliResult<String> {
