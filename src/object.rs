@@ -118,7 +118,15 @@ impl<'b> Object<'b> {
                         .as_slice(),
                 ].concat()
             },
-            Self::Commit(commit_object) => commit_object.to_string().as_bytes().to_vec()
+            Self::Commit(commit_object) => {
+                let entry = commit_object.to_string();
+                let header = format!("commit {}", entry.as_bytes().len());
+                [
+                    header.as_bytes(),
+                    &[b'\0'],
+                    entry.as_bytes(),
+                ].concat()
+            }
         }
     }
 
