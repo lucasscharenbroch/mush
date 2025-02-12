@@ -9,10 +9,10 @@ use super::Object;
 
 const DATE_FORMAT_STRING: &'static str = "%s %:z";
 
-struct PersonTime {
-    name: String,
-    email: String,
-    timestamp: chrono::DateTime<chrono::FixedOffset>,
+pub struct PersonTime {
+    pub name: String,
+    pub email: String,
+    pub timestamp: chrono::DateTime<chrono::FixedOffset>,
 }
 
 impl PersonTime {
@@ -26,11 +26,11 @@ impl PersonTime {
 }
 
 pub struct CommitObject {
-    tree_hash: crate::hash::Hash,
-    parent_hashes: Vec<crate::hash::Hash>,
-    author: PersonTime,
+    pub tree_hash: crate::hash::Hash,
+    pub parent_hashes: Vec<crate::hash::Hash>,
+    pub author: PersonTime,
     //< git also has committer
-    message: String,
+    pub message: String,
 }
 
 impl CommitObject {
@@ -113,6 +113,8 @@ impl CommitObject {
                 else {
                     panic!("Violated arity invariant")
                 };
+
+            let email = &email[1..(email.len() - 1)]; // trim leading and trailing '<' and '>'
 
             let [seconds, offset] = time.split(" ").collect::<Vec<_>>()[0..2]
                 else {

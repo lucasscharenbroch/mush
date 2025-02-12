@@ -1,12 +1,12 @@
 // Need a `lib.rs` file to make these modules accessible to
 // the integration tests.
 
-mod io;
-mod object;
 mod refs;
 mod revision; // plural to avoid name collision with `ref` keyword
 mod index;
 mod config;
+pub mod object;
+pub mod io;
 pub mod hash;
 pub mod cli;
 
