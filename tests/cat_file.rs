@@ -1,6 +1,7 @@
 mod helpers;
 
 use helpers::*;
+use mush::hash::Hash;
 
 #[test]
 fn exists() {
@@ -127,7 +128,7 @@ fn size() {
 }
 
 #[test]
-fn pretty() {
+fn pretty_blob() {
     let dir = tempdir();
     mush_init_clean_repo(&dir);
 
@@ -168,4 +169,64 @@ fn pretty() {
             String::from_utf8(output.stdout).unwrap()
         );
     });
+}
+
+#[test]
+fn pretty_tree() {
+    let dir = tempdir();
+    mush_init_clean_repo(&dir);
+
+    create_dir(dir.path(), "y");
+    create_file_with_contents(dir.path(), "y/xyz.txt", "abc\n");
+    create_file_with_contents(dir.path(), "x", "abcd\n");
+
+    assert!(
+        mush!(dir)
+            .arg("update-index")
+            .arg("--add")
+            .arg("acbe86c7c89586e0912a0a851bacf309c595c308")
+            .arg("x")
+            .output()
+            .unwrap()
+            .status.success()
+    );
+
+    assert!(
+        mush!(dir)
+            .arg("update-index")
+            .arg("--add")
+            .arg("8baef1b4abc478178b004d62031cf7fe6db6f903")
+            .arg("y/xyz.txt")
+            .output()
+            .unwrap()
+            .status.success()
+    );
+
+    let output = mush!(dir)
+        .arg("write-tree")
+        .output()
+        .unwrap();
+
+    assert!(output.status.success());
+    assert_eq!(String::from_utf8(output.stdout).unwrap(), "0742454447b93be8ab983887217db204371a77bd\n");
+
+    let output = mush!(dir)
+        .arg("cat-file")
+        .arg("-p")
+        .arg("0742454447b93be8ab983887217db204371a77bd")
+        .output()
+        .unwrap();
+
+    assert_output_success(&output);
+    assert_eq!("100644 blob acbe86c7c89586e0912a0a851bacf309c595c308\tx\n 40000 tree 892b8c36b1579b893c2eb05641d4361bd25ffde9\ty\n", String::from_utf8_lossy(&output.stdout));
+
+    let output = mush!(dir)
+        .arg("cat-file")
+        .arg("-p")
+        .arg("892b8c36b1579b893c2eb05641d4361bd25ffde9")
+        .output()
+        .unwrap();
+
+    assert_output_success(&output);
+    assert_eq!("100644 blob 8baef1b4abc478178b004d62031cf7fe6db6f903\txyz.txt\n", String::from_utf8_lossy(&output.stdout));
 }

@@ -14,7 +14,7 @@ impl<'b> Object<'b> {
                         let object_type = read_object_header(&entry.hash)?.tipe;
 
                         Ok(format!(
-                            "{:06} {} {}\t{}\n",
+                            "{:6o} {} {}\t{}\n",
                             entry.mode,
                             object_type.to_str(),
                             entry.hash.as_str(),

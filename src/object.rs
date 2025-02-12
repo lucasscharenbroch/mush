@@ -70,19 +70,18 @@ impl TreeEntry {
     }
 
     fn unstore(bytes: &mut impl Iterator<Item = u8>) -> CliResult<Self> {
-        let mode = bytes.take(6).collect::<Vec<_>>();
-        let space = bytes.take(1).collect::<Vec<_>>();
+        let mode = bytes.take_while(|b| *b != b' ').collect::<Vec<_>>();
         let filename = bytes.take_while(|b| *b != b'\0').collect::<Vec<_>>();
         let hash = bytes.take(20).collect::<Vec<_>>();
 
-        if mode.len() != 6 || space.len() != 1 || space[0] != b' ' || hash.len() != 20 {
+        if !matches!(mode.len(), 5..=6) || hash.len() != 20 {
             return Err(String::from("Malformed tree object"));
         }
 
         Ok(TreeEntry {
             mode: String::from_utf8(mode)
                 .map_err(|_| ())
-                .and_then(|s| s.parse::<u32>().map_err(|_| ()))
+                .and_then(|s| u32::from_str_radix(&s, 8).map_err(|_| ()))
                 .map_err(|_| String::from("Malformed tree object: bad mode string"))?,
             filename: String::from_utf8(filename)
                     .map_err(|_| String::from("Malformed index: bad filename"))?,
