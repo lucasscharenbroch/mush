@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 chrono = "0.4.39"
 clap = { version = "4.5.17", features = ["derive"] }
+colored = "3.0.0"
 flate2 = "1.0.34"
 generic-array = "1.1.0"
 hex = "0.4.3"

@@ -5,6 +5,7 @@ mod update_index;
 mod write_tree;
 mod commit_tree;
 mod config;
+mod status;
 
 use cat_file::CatFileArgs;
 use commit_tree::CommitTreeArgs;
@@ -13,6 +14,7 @@ use hash_object::HashObjectArgs;
 use init::InitArgs;
 
 use clap::{Parser, Subcommand};
+use status::StatusArgs;
 use update_index::UpdateIndexArgs;
 use write_tree::WriteTreeArgs;
 use std::process::ExitCode;
@@ -59,6 +61,8 @@ pub enum CliSubcommand {
     CommitTree(CommitTreeArgs),
     /// Get and set repository options
     Config(ConfigArgs),
+    /// Show the working tree status
+    Status(StatusArgs),
 }
 
 pub trait MushSubcommand {
@@ -77,6 +81,7 @@ impl std::ops::Deref for CliSubcommand {
             Self::WriteTree(args) => args,
             Self::CommitTree(args) => args,
             Self::Config(args) => args,
+            Self::Status(args) => args,
         }
     }
 }

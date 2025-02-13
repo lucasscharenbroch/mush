@@ -1,3 +1,4 @@
+pub mod status;
 
 // Docs for git index format:
 // https://github.com/git/git/blob/master/Documentation/gitformat-index.txt

@@ -14,6 +14,7 @@ The basic plumbing is almost identical to that of `git`, modulo several incompat
 - `mush write-tree`
 - `mush commit-tree`
 - `mush config`
+- `mush status`
 
 ## To Do
 - [X] set up cli argparse
@@ -32,7 +33,8 @@ The basic plumbing is almost identical to that of `git`, modulo several incompat
     - [ ] tags
     - [ ] update-ref (update the reflog, set contents of heads/refs/...)
 - [X] index
-- [ ] status / add
+- [X] status
+- [ ] add
 - [ ] log
 - [ ] commit
 - [ ] checkout / switch

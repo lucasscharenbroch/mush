@@ -1,3 +1,5 @@
+use std::fs::ReadDir;
+
 use crate::cli::{with_context, CliResult, ContextlessCliResult};
 use crate::index::{Index, RepoRelativeFilename};
 use crate::object::{Object, ObjectHeader};
@@ -331,4 +333,12 @@ pub fn read_object(hash: &Hash) -> CliResult<Object<'static>> {
         &object_contents_str
     )
         .map_err(|msg| format!("Error while reading object: {msg}"))
+}
+
+pub fn cwd_iter() -> ContextlessCliResult<ReadDir> {
+    std::fs::read_dir(".")
+        .map_err::<Box<dyn FnOnce(&str) -> String>, _>(
+            |io_err|
+            Box::new(move |reason| format!("Failed to {reason}: error while reading cwd: {io_err}"))
+        )
 }
